@@ -83,7 +83,7 @@ export function renderControls(
     return { details, summary }
   }
 
-  const practice = makeMenu('practice', 'menu__panel--modes', (panel) => {
+  const practice = makeMenu('type', 'menu__panel--modes', (panel) => {
     for (const id of MODE_IDS) {
       addCheck(panel, MODE_LABELS[id], selectedModes.has(id), (on) => {
         if (on) selectedModes.add(id)
@@ -114,15 +114,7 @@ export function renderControls(
   })
 
   function refreshSummaries(): void {
-    const modeNames = MODE_IDS.filter((id) => selectedModes.has(id)).map(
-      (id) => MODE_LABELS[id],
-    )
-    practice.summary.textContent =
-      modeNames.length === 0
-        ? 'practice'
-        : modeNames.length <= 2
-          ? modeNames.join(' · ')
-          : `practice · ${modeNames.length}`
+    practice.summary.textContent = 'type'
 
     const rootList = ROOT_NOTES.filter((n) => selectedRoots.has(n))
     roots.summary.textContent =
