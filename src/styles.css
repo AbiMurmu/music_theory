@@ -103,11 +103,11 @@ body,
   align-items: center;
   justify-content: center;
   min-height: 2.35rem;
-  padding: 0.3rem 0.45rem;
+  padding: 0.3rem 0.28rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-2);
-  font-size: 0.75rem;
+  font-size: 0.62rem;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
@@ -144,6 +144,13 @@ body,
 .menu:last-child .menu__panel {
   left: auto;
   right: 0;
+}
+
+.menu__rule {
+  grid-column: 1 / -1;
+  height: 1px;
+  margin: 0.15rem 0;
+  background: var(--border);
 }
 
 .menu__panel--modes,

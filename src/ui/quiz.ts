@@ -24,6 +24,7 @@ export function renderQuiz(root: HTMLElement): void {
     roots: [...DEFAULT_QUIZ_CONFIG.roots],
     scales: [...DEFAULT_QUIZ_CONFIG.scales],
     modes: [...DEFAULT_QUIZ_CONFIG.modes],
+    answers: [...DEFAULT_QUIZ_CONFIG.answers],
   }
 
   const toolbar = document.createElement('div')
@@ -91,8 +92,8 @@ export function renderQuiz(root: HTMLElement): void {
     const selected = selectedKeylistValues(keylistEl)
     const need = chordSize(current.chordType)
     if (selected.length < need) return
-    const label = current.correctNotes.join(' ')
-    gradeAndAdvance(notesMatch(selected, current.correctNotes), label)
+    const label = current.correctAnswers.join(' ')
+    gradeAndAdvance(notesMatch(selected, current.correctAnswers), label)
   }
 
   function nextQuestion(): void {
@@ -109,7 +110,9 @@ export function renderQuiz(root: HTMLElement): void {
     promptEl.textContent = current.prompt
 
     if (current.type === 'chord') {
-      setMeta(`select ${chordSize(current.chordType)} keys`, '')
+      const n = chordSize(current.chordType)
+      const unit = current.answerKind === 'degrees' ? 'degrees' : 'keys'
+      setMeta(`select ${n} ${unit}`, '')
       renderKeylist(keylistEl, {
         choices: current.choices,
         mode: 'multi',

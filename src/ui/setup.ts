@@ -1,9 +1,12 @@
 import {
+  ANSWER_IDS,
+  ANSWER_LABELS,
   MODE_IDS,
   MODE_LABELS,
   ROOT_NOTES,
   SCALE_IDS,
   SCALE_LABELS,
+  type AnswerId,
   type QuizConfig,
   type QuizModeId,
   type RootNote,
@@ -21,6 +24,7 @@ export function renderControls(
   const selectedRoots = new Set<RootNote>(config.roots)
   const selectedScales = new Set<ScaleId>(config.scales)
   const selectedModes = new Set<QuizModeId>(config.modes)
+  const selectedAnswers = new Set<AnswerId>(config.answers)
 
   const menus = document.createElement('div')
   menus.className = 'menus'
@@ -34,6 +38,7 @@ export function renderControls(
       roots: ROOT_NOTES.filter((n) => selectedRoots.has(n)),
       scales: SCALE_IDS.filter((id) => selectedScales.has(id)),
       modes: MODE_IDS.filter((id) => selectedModes.has(id)),
+      answers: ANSWER_IDS.filter((id) => selectedAnswers.has(id)),
     })
     refreshSummaries()
   }
@@ -113,24 +118,21 @@ export function renderControls(
     }
   })
 
+  const answers = makeMenu('degree-notes', 'menu__panel--modes', (panel) => {
+    for (const id of ANSWER_IDS) {
+      addCheck(panel, ANSWER_LABELS[id], selectedAnswers.has(id), (on) => {
+        if (on) selectedAnswers.add(id)
+        else selectedAnswers.delete(id)
+        emit()
+      })
+    }
+  })
+
   function refreshSummaries(): void {
     practice.summary.textContent = 'type'
-
-    const rootList = ROOT_NOTES.filter((n) => selectedRoots.has(n))
-    roots.summary.textContent =
-      rootList.length === 0
-        ? 'roots'
-        : rootList.length === 1
-          ? rootList[0]
-          : `roots · ${rootList.length}`
-
-    const scaleList = SCALE_IDS.filter((id) => selectedScales.has(id))
-    scales.summary.textContent =
-      scaleList.length === 0
-        ? 'scales'
-        : scaleList.length === 1
-          ? SCALE_LABELS[scaleList[0]]
-          : `scales · ${scaleList.length}`
+    roots.summary.textContent = 'root note'
+    scales.summary.textContent = 'scale'
+    answers.summary.textContent = 'degree/notes'
   }
 
   refreshSummaries()

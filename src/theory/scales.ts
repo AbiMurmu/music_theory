@@ -61,6 +61,45 @@ export const CHORD_TYPE_IDS = ['triad', 'seventh', 'ninth'] as const
 
 export type ChordTypeId = (typeof CHORD_TYPE_IDS)[number]
 
+export const ANSWER_IDS = ['notes', 'degrees'] as const
+
+export type AnswerId = (typeof ANSWER_IDS)[number]
+
+export const ANSWER_LABELS: Record<AnswerId, string> = {
+  notes: 'notes',
+  degrees: 'degrees',
+}
+
+export const DEGREE_CHOICES = [
+  '1',
+  'b2',
+  '2',
+  'b3',
+  '3',
+  '4',
+  'b5',
+  '5',
+  '#5',
+  '6',
+  'b7',
+  '7',
+] as const
+
+export const NINTH_DEGREE_CHOICES = [
+  '1',
+  'b3',
+  '3',
+  '4',
+  'b5',
+  '5',
+  '#5',
+  '6',
+  'b7',
+  '7',
+  'b9',
+  '9',
+] as const
+
 /** Semitone offsets from root for each scale. */
 const SCALE_INTERVALS: Record<ScaleId, readonly number[]> = {
   major: [0, 2, 4, 5, 7, 9, 11],
@@ -144,6 +183,57 @@ export function chordPromptLabel(type: ChordTypeId): string {
   return '9th'
 }
 
+const CHROMATIC_DEGREE = [
+  '1',
+  'b2',
+  '2',
+  'b3',
+  '3',
+  '4',
+  'b5',
+  '5',
+  '#5',
+  '6',
+  'b7',
+  '7',
+] as const
+
+function intervalLabel(voice: number, semitones: number): string {
+  if (voice === 0) return '1'
+  if (voice === 1) {
+    if (semitones === 2) return '2'
+    if (semitones === 3) return 'b3'
+    if (semitones === 4) return '3'
+    if (semitones === 5) return '4'
+  }
+  if (voice === 2) {
+    if (semitones === 6) return 'b5'
+    if (semitones === 7) return '5'
+    if (semitones === 8) return '#5'
+  }
+  if (voice === 3) {
+    if (semitones === 9) return '6'
+    if (semitones === 10) return 'b7'
+    if (semitones === 11) return '7'
+  }
+  if (voice >= 4) {
+    if (semitones === 1) return 'b9'
+    if (semitones === 2) return '9'
+    if (semitones === 3) return '#9'
+  }
+  return CHROMATIC_DEGREE[semitones] ?? String(semitones)
+}
+
+/** Chord tones as 1, b3, 5, b7, 9, … from the chord root. */
+export function chordDegreeLabels(notes: readonly RootNote[]): string[] {
+  if (notes.length === 0) return []
+  const rootIndex = NOTE_INDEX[notes[0]]
+  return notes.map((note, voice) => {
+    const semitones = (NOTE_INDEX[note] - rootIndex + 12) % 12
+    return intervalLabel(voice, semitones)
+  })
+}
+
 export function notesMatch(
   selected: readonly string[],
   correct: readonly string[],
@@ -181,8 +271,10 @@ export type ChordQuestion = {
   scaleId: ScaleId
   degree: number
   chordType: ChordTypeId
+  answerKind: AnswerId
   prompt: string
   correctNotes: RootNote[]
+  correctAnswers: string[]
   choices: string[]
 }
 
@@ -195,12 +287,14 @@ export type QuizConfig = {
   roots: RootNote[]
   scales: ScaleId[]
   modes: QuizModeId[]
+  answers: AnswerId[]
 }
 
 export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
   roots: ['C'],
   scales: ['major'],
   modes: ['single', 'triad', 'seventh', 'ninth'],
+  answers: ['notes', 'degrees'],
 }
 
 function pickRandom<T>(items: readonly T[]): T {
@@ -217,7 +311,7 @@ function playableModes(config: QuizConfig): QuizModeId[] {
   if (config.modes.includes('single')) modes.push('single')
   const heptatonic = config.scales.some(isHeptatonic)
   for (const mode of chordModesOf(config)) {
-    if (heptatonic) modes.push(mode)
+    if (heptatonic && config.answers.length > 0) modes.push(mode)
   }
   return modes
 }
@@ -231,6 +325,9 @@ export function configHint(config: QuizConfig): string | null {
   if (config.scales.length === 0) return 'select at least one scale'
   if (config.modes.length === 0) {
     return 'select single note, triad, 7th or 9th'
+  }
+  if (chordModesOf(config).length > 0 && config.answers.length === 0) {
+    return 'select notes or degrees'
   }
   if (
     !config.modes.includes('single') &&
@@ -270,15 +367,26 @@ export function generateQuestion(config: QuizConfig): QuizQuestion | null {
     )
     const notes = diatonicChord(root, scaleId, degree, chordSize(mode))
     const scaleLabel = SCALE_LABELS[scaleId]
+    const formats =
+      config.answers.length > 0 ? config.answers : (['notes'] as AnswerId[])
+    const answerKind = pickRandom(formats)
+    const degrees = chordDegreeLabels(notes)
     return {
       type: 'chord',
       root,
       scaleId,
       degree,
       chordType: mode,
+      answerKind,
       prompt: `${degreeLabel(degree)} ${chordPromptLabel(mode)} of ${root} ${scaleLabel}`,
       correctNotes: notes,
-      choices: [...ROOT_NOTES],
+      correctAnswers: answerKind === 'degrees' ? degrees : [...notes],
+      choices:
+        answerKind === 'degrees'
+          ? mode === 'ninth'
+            ? [...NINTH_DEGREE_CHOICES]
+            : [...DEGREE_CHOICES]
+          : [...ROOT_NOTES],
     }
   }
 
