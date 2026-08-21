@@ -125,18 +125,25 @@ body,
   color: var(--accent);
 }
 
-.menu:last-child .menu__panel {
-  left: auto;
-  right: 0;
-}
+.menu__panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 8;
   display: grid;
   gap: 0.3rem;
-  min-width: min(18rem, calc(100vw - 1.4rem));
+  min-width: 12rem;
+  max-width: calc(100vw - 1.4rem);
   padding: 0.55rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-2);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.menu:last-child .menu__panel {
+  left: auto;
+  right: 0;
 }
 
 .menu__panel--modes,
@@ -146,7 +153,8 @@ body,
 
 .menu__panel--keys {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: min(20rem, calc(100vw - 1.4rem));
+  width: 20rem;
+  max-width: calc(100vw - 1.4rem);
 }
 
 .menu-item {

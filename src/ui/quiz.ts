@@ -1,6 +1,5 @@
 import {
   chordSize,
-  configCanGenerate,
   configHint,
   DEFAULT_QUIZ_CONFIG,
   generateQuestion,
@@ -30,7 +29,8 @@ export function renderQuiz(root: HTMLElement): void {
   const toolbar = document.createElement('div')
   renderControls(toolbar, config, (next) => {
     config = next
-    applyConfigState()
+    window.clearTimeout(advanceTimer)
+    nextQuestion()
   })
 
   const scoreHost = toolbar.querySelector('[data-slot="score"]')
@@ -55,6 +55,7 @@ export function renderQuiz(root: HTMLElement): void {
   const score: Score = { correct: 0, total: 0 }
   let current: QuizQuestion | null = null
   let locked = false
+  let advanceTimer = 0
 
   function updateScore(): void {
     const el = toolbar.querySelector('[data-slot="score"]')
@@ -64,23 +65,6 @@ export function renderQuiz(root: HTMLElement): void {
   function setMeta(text: string, kind: '' | 'ok' | 'bad' | 'warn'): void {
     metaEl.textContent = text
     metaEl.className = kind ? `meta meta--${kind}` : 'meta'
-  }
-
-  function applyConfigState(): void {
-    const hint = configHint(config)
-    if (hint && !locked) setMeta(hint, 'warn')
-    if (!configCanGenerate(config)) {
-      setKeylistDisabled(keylistEl, true)
-    } else if (!locked) {
-      setKeylistDisabled(keylistEl, false)
-      if (current && !hint) {
-        if (current.type === 'chord') {
-          setMeta(`select ${chordSize(current.chordType)} keys`, '')
-        } else {
-          setMeta('', '')
-        }
-      }
-    }
   }
 
   function gradeAndAdvance(ok: boolean, correctLabel: string): void {
@@ -94,7 +78,7 @@ export function renderQuiz(root: HTMLElement): void {
       setMeta(`incorrect · ${correctLabel}`, 'bad')
     }
     updateScore()
-    window.setTimeout(() => nextQuestion(), 900)
+    advanceTimer = window.setTimeout(() => nextQuestion(), 900)
   }
 
   function handleSingle(value: string): void {
