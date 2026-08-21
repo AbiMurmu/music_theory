@@ -46,15 +46,20 @@ export const SCALE_LABELS: Record<ScaleId, string> = {
   minorPentatonic: 'Minor Pentatonic',
 }
 
-export const CHORD_TYPE_IDS = ['triad', 'seventh', 'ninth'] as const
+export const MODE_IDS = ['single', 'triad', 'seventh', 'ninth'] as const
 
-export type ChordTypeId = (typeof CHORD_TYPE_IDS)[number]
+export type QuizModeId = (typeof MODE_IDS)[number]
 
-export const CHORD_TYPE_LABELS: Record<ChordTypeId, string> = {
+export const MODE_LABELS: Record<QuizModeId, string> = {
+  single: 'single note',
   triad: 'triad',
   seventh: '7th',
   ninth: '9th',
 }
+
+export const CHORD_TYPE_IDS = ['triad', 'seventh', 'ninth'] as const
+
+export type ChordTypeId = (typeof CHORD_TYPE_IDS)[number]
 
 /** Semitone offsets from root for each scale. */
 const SCALE_INTERVALS: Record<ScaleId, readonly number[]> = {
@@ -189,62 +194,61 @@ export type QuizQuestion =
 export type QuizConfig = {
   roots: RootNote[]
   scales: ScaleId[]
-  includeDegrees: boolean
-  includeChords: boolean
-  chordTypes: ChordTypeId[]
+  modes: QuizModeId[]
 }
 
 export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
   roots: ['C'],
   scales: ['major'],
-  includeDegrees: true,
-  includeChords: true,
-  chordTypes: ['triad'],
+  modes: ['single', 'triad', 'seventh', 'ninth'],
 }
 
 function pickRandom<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)]
 }
 
-type Family = 'degreeToNote' | 'noteToDegree' | 'chord'
+function chordModesOf(config: QuizConfig): ChordTypeId[] {
+  return config.modes.filter((m): m is ChordTypeId => m !== 'single')
+}
 
-function enabledFamilies(config: QuizConfig): Family[] {
-  const families: Family[] = []
-  if (config.includeDegrees && config.scales.length > 0) {
-    families.push('degreeToNote', 'noteToDegree')
+function playableModes(config: QuizConfig): QuizModeId[] {
+  if (config.roots.length === 0 || config.scales.length === 0) return []
+  const modes: QuizModeId[] = []
+  if (config.modes.includes('single')) modes.push('single')
+  const heptatonic = config.scales.some(isHeptatonic)
+  for (const mode of chordModesOf(config)) {
+    if (heptatonic) modes.push(mode)
   }
-  const heptatonic = config.scales.filter(isHeptatonic)
-  if (
-    config.includeChords &&
-    heptatonic.length > 0 &&
-    config.chordTypes.length > 0
-  ) {
-    families.push('chord')
-  }
-  return families
+  return modes
 }
 
 export function configCanGenerate(config: QuizConfig): boolean {
-  return config.roots.length > 0 && enabledFamilies(config).length > 0
+  return playableModes(config).length > 0
 }
 
 export function configHint(config: QuizConfig): string | null {
   if (config.roots.length === 0) return 'select at least one root'
   if (config.scales.length === 0) return 'select at least one scale'
-  if (!config.includeDegrees && !config.includeChords) {
-    return 'select degrees or chords'
+  if (config.modes.length === 0) {
+    return 'select single note, triad, 7th or 9th'
   }
   if (
-    !config.includeDegrees &&
-    config.includeChords &&
-    config.chordTypes.length === 0
-  ) {
-    return 'select a chord type'
-  }
-  if (
-    !config.includeDegrees &&
-    config.includeChords &&
+    !config.modes.includes('single') &&
+    chordModesOf(config).length > 0 &&
     !config.scales.some(isHeptatonic)
+  ) {
+    return 'chords need a 7-note scale'
+  }
+  if (
+    config.modes.includes('single') === false &&
+    chordModesOf(config).length === 0
+  ) {
+    return 'select single note, triad, 7th or 9th'
+  }
+  if (
+    chordModesOf(config).length > 0 &&
+    !config.scales.some(isHeptatonic) &&
+    config.modes.includes('single')
   ) {
     return 'chords need a 7-note scale'
   }
@@ -252,29 +256,27 @@ export function configHint(config: QuizConfig): string | null {
 }
 
 export function generateQuestion(config: QuizConfig): QuizQuestion | null {
-  if (config.roots.length === 0) return null
-  const families = enabledFamilies(config)
-  if (families.length === 0) return null
+  const modes = playableModes(config)
+  if (modes.length === 0) return null
 
-  const family = pickRandom(families)
+  const mode = pickRandom(modes)
   const root = pickRandom(config.roots)
 
-  if (family === 'chord') {
+  if (mode !== 'single') {
     const scaleId = pickRandom(config.scales.filter(isHeptatonic))
-    const chordType = pickRandom(config.chordTypes)
     const scale = buildScale(root, scaleId)
     const degree = pickRandom(
       Array.from({ length: scale.length }, (_, i) => i + 1),
     )
-    const notes = diatonicChord(root, scaleId, degree, chordSize(chordType))
+    const notes = diatonicChord(root, scaleId, degree, chordSize(mode))
     const scaleLabel = SCALE_LABELS[scaleId]
     return {
       type: 'chord',
       root,
       scaleId,
       degree,
-      chordType,
-      prompt: `${degreeLabel(degree)} ${chordPromptLabel(chordType)} of ${root} ${scaleLabel}`,
+      chordType: mode,
+      prompt: `${degreeLabel(degree)} ${chordPromptLabel(mode)} of ${root} ${scaleLabel}`,
       correctNotes: notes,
       choices: [...ROOT_NOTES],
     }
@@ -283,37 +285,17 @@ export function generateQuestion(config: QuizConfig): QuizQuestion | null {
   const scaleId = pickRandom(config.scales)
   const scale = buildScale(root, scaleId)
   const scaleLabel = SCALE_LABELS[scaleId]
-
-  if (family === 'degreeToNote') {
-    const degree = pickRandom(
-      Array.from({ length: scale.length }, (_, i) => i + 1),
-    )
-    const correct = noteAtDegree(root, scaleId, degree)
-    return {
-      type: 'degreeToNote',
-      root,
-      scaleId,
-      degree,
-      prompt: `${degreeLabel(degree)} of ${root} ${scaleLabel}`,
-      correctAnswer: correct,
-      choices: [...ROOT_NOTES],
-    }
-  }
-
-  const note = pickRandom(scale)
-  const degree = degreeOfNote(root, scaleId, note)!
-  const degreeChoices = Array.from(
-    { length: scale.length },
-    (_, i) => degreeLabel(i + 1),
+  const degree = pickRandom(
+    Array.from({ length: scale.length }, (_, i) => i + 1),
   )
-
+  const correct = noteAtDegree(root, scaleId, degree)
   return {
-    type: 'noteToDegree',
+    type: 'degreeToNote',
     root,
     scaleId,
-    note,
-    prompt: `What is ${note} in ${root} ${scaleLabel}?`,
-    correctAnswer: degreeLabel(degree),
-    choices: degreeChoices,
+    degree,
+    prompt: `${degreeLabel(degree)} of ${root} ${scaleLabel}`,
+    correctAnswer: correct,
+    choices: [...ROOT_NOTES],
   }
 }

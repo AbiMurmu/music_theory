@@ -21,51 +21,66 @@ export function renderQuiz(root: HTMLElement): void {
   root.replaceChildren()
   root.className = 'screen quiz'
 
-  let config: QuizConfig = { ...DEFAULT_QUIZ_CONFIG, chordTypes: [...DEFAULT_QUIZ_CONFIG.chordTypes], roots: [...DEFAULT_QUIZ_CONFIG.roots], scales: [...DEFAULT_QUIZ_CONFIG.scales] }
+  let config: QuizConfig = {
+    roots: [...DEFAULT_QUIZ_CONFIG.roots],
+    scales: [...DEFAULT_QUIZ_CONFIG.scales],
+    modes: [...DEFAULT_QUIZ_CONFIG.modes],
+  }
 
-  const header = document.createElement('header')
-  header.className = 'quiz-header'
+  const toolbar = document.createElement('div')
+  renderControls(toolbar, config, (next) => {
+    config = next
+    applyConfigState()
+  })
 
-  const title = document.createElement('h1')
-  title.className = 'title'
-  title.textContent = 'scale quiz'
-
-  const scoreEl = document.createElement('p')
-  scoreEl.className = 'score'
-  scoreEl.setAttribute('aria-live', 'polite')
-
-  header.append(title, scoreEl)
+  const scoreHost = toolbar.querySelector('[data-slot="score"]')
+  scoreHost?.setAttribute('aria-live', 'polite')
 
   const promptEl = document.createElement('p')
   promptEl.className = 'prompt'
   promptEl.setAttribute('aria-live', 'polite')
 
-  const selectHintEl = document.createElement('p')
-  selectHintEl.className = 'hint hint--select'
-
-  const feedbackEl = document.createElement('p')
-  feedbackEl.className = 'feedback'
-  feedbackEl.setAttribute('aria-live', 'assertive')
+  const metaEl = document.createElement('p')
+  metaEl.className = 'meta'
+  metaEl.setAttribute('aria-live', 'assertive')
 
   const keylistEl = document.createElement('div')
 
-  const quizMain = document.createElement('div')
-  quizMain.className = 'quiz-main'
-  quizMain.append(header, promptEl, selectHintEl, feedbackEl, keylistEl)
+  const stage = document.createElement('div')
+  stage.className = 'quiz-stage'
+  stage.append(promptEl, metaEl, keylistEl)
 
-  const configHintEl = document.createElement('p')
-  configHintEl.className = 'hint'
-
-  const controlsEl = document.createElement('div')
-
-  root.append(quizMain, configHintEl, controlsEl)
+  root.append(toolbar, stage)
 
   const score: Score = { correct: 0, total: 0 }
   let current: QuizQuestion | null = null
   let locked = false
 
   function updateScore(): void {
-    scoreEl.textContent = `${score.correct} / ${score.total}`
+    const el = toolbar.querySelector('[data-slot="score"]')
+    if (el) el.textContent = `${score.correct} / ${score.total}`
+  }
+
+  function setMeta(text: string, kind: '' | 'ok' | 'bad' | 'warn'): void {
+    metaEl.textContent = text
+    metaEl.className = kind ? `meta meta--${kind}` : 'meta'
+  }
+
+  function applyConfigState(): void {
+    const hint = configHint(config)
+    if (hint && !locked) setMeta(hint, 'warn')
+    if (!configCanGenerate(config)) {
+      setKeylistDisabled(keylistEl, true)
+    } else if (!locked) {
+      setKeylistDisabled(keylistEl, false)
+      if (current && !hint) {
+        if (current.type === 'chord') {
+          setMeta(`select ${chordSize(current.chordType)} keys`, '')
+        } else {
+          setMeta('', '')
+        }
+      }
+    }
   }
 
   function gradeAndAdvance(ok: boolean, correctLabel: string): void {
@@ -74,11 +89,9 @@ export function renderQuiz(root: HTMLElement): void {
     score.total += 1
     if (ok) {
       score.correct += 1
-      feedbackEl.textContent = 'correct'
-      feedbackEl.className = 'feedback feedback--ok'
+      setMeta('correct', 'ok')
     } else {
-      feedbackEl.textContent = `incorrect · ${correctLabel}`
-      feedbackEl.className = 'feedback feedback--bad'
+      setMeta(`incorrect · ${correctLabel}`, 'bad')
     }
     updateScore()
     window.setTimeout(() => nextQuestion(), 900)
@@ -100,17 +113,11 @@ export function renderQuiz(root: HTMLElement): void {
 
   function nextQuestion(): void {
     locked = false
-    feedbackEl.textContent = ''
-    feedbackEl.className = 'feedback'
-
     const hint = configHint(config)
-    configHintEl.textContent = hint ?? ''
-    configHintEl.hidden = hint === null
-
     const question = generateQuestion(config)
     if (!question) {
+      setMeta(hint ?? 'select options in the menus', 'warn')
       setKeylistDisabled(keylistEl, true)
-      selectHintEl.textContent = ''
       return
     }
 
@@ -118,15 +125,14 @@ export function renderQuiz(root: HTMLElement): void {
     promptEl.textContent = current.prompt
 
     if (current.type === 'chord') {
-      const n = chordSize(current.chordType)
-      selectHintEl.textContent = `select ${n} keys`
+      setMeta(`select ${chordSize(current.chordType)} keys`, '')
       renderKeylist(keylistEl, {
         choices: current.choices,
         mode: 'multi',
         onSelect: handleChordToggle,
       })
     } else {
-      selectHintEl.textContent = ''
+      setMeta('', '')
       renderKeylist(keylistEl, {
         choices: current.choices,
         mode: 'single',
@@ -134,18 +140,6 @@ export function renderQuiz(root: HTMLElement): void {
       })
     }
   }
-
-  renderControls(controlsEl, config, (next) => {
-    config = next
-    const hint = configHint(config)
-    configHintEl.textContent = hint ?? ''
-    configHintEl.hidden = hint === null
-    if (!configCanGenerate(config)) {
-      setKeylistDisabled(keylistEl, true)
-    } else if (!locked) {
-      setKeylistDisabled(keylistEl, false)
-    }
-  })
 
   updateScore()
   nextQuestion()
