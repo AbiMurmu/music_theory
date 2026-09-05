@@ -12,7 +12,6 @@ import {
   selectedKeylistValues,
   setKeylistDisabled,
 } from './keylist'
-import { renderStaff } from './staff'
 
 type Score = { correct: number; total: number }
 
@@ -26,7 +25,6 @@ export function renderQuiz(root: HTMLElement): void {
     modes: [...DEFAULT_QUIZ_CONFIG.modes],
     answers: [...DEFAULT_QUIZ_CONFIG.answers],
     qualities: [...DEFAULT_QUIZ_CONFIG.qualities],
-    clefs: [...DEFAULT_QUIZ_CONFIG.clefs],
   }
 
   const toolbar = document.createElement('div')
@@ -43,10 +41,6 @@ export function renderQuiz(root: HTMLElement): void {
   promptEl.className = 'prompt'
   promptEl.setAttribute('aria-live', 'polite')
 
-  const staffEl = document.createElement('div')
-  staffEl.className = 'staff-host'
-  staffEl.hidden = true
-
   const metaEl = document.createElement('p')
   metaEl.className = 'meta'
   metaEl.setAttribute('aria-live', 'assertive')
@@ -55,7 +49,7 @@ export function renderQuiz(root: HTMLElement): void {
 
   const stage = document.createElement('div')
   stage.className = 'quiz-stage'
-  stage.append(promptEl, staffEl, metaEl, keylistEl)
+  stage.append(promptEl, metaEl, keylistEl)
 
   root.append(toolbar, stage)
 
@@ -107,9 +101,6 @@ export function renderQuiz(root: HTMLElement): void {
     const hint = configHint(config)
     const question = generateQuestion(config)
     if (!question) {
-      staffEl.hidden = true
-      staffEl.replaceChildren()
-      promptEl.hidden = false
       promptEl.textContent = ''
       setMeta(hint ?? 'select options in the menus', 'warn')
       setKeylistDisabled(keylistEl, true)
@@ -117,24 +108,6 @@ export function renderQuiz(root: HTMLElement): void {
     }
 
     current = question
-
-    if (current.type === 'clef') {
-      promptEl.hidden = true
-      promptEl.textContent = ''
-      staffEl.hidden = false
-      renderStaff(staffEl, { clef: current.clef, step: current.step })
-      setMeta('look at the clef — which note is this?', '')
-      renderKeylist(keylistEl, {
-        choices: current.choices,
-        mode: 'single',
-        onSelect: handleSingle,
-      })
-      return
-    }
-
-    staffEl.hidden = true
-    staffEl.replaceChildren()
-    promptEl.hidden = false
     promptEl.textContent = current.prompt
 
     if (current.type === 'chord') {

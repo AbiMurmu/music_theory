@@ -27,8 +27,10 @@ export function renderKeylist(
   container.className = 'keylist'
   if (options.choices.length === 12 || mode === 'multi') {
     container.classList.add('keylist--notes')
-  } else if (options.choices.length === 7) {
+  } else if (options.choices.length <= 7) {
     container.classList.add('keylist--letters')
+  } else {
+    container.classList.add('keylist--pitch')
   }
 
   const order = shuffle(options.choices)

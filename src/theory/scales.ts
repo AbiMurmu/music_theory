@@ -1,10 +1,3 @@
-import {
-  NOTE_LETTERS,
-  pickClefNote,
-  type ClefId,
-  type NoteLetter,
-} from './clef'
-
 export const ROOT_NOTES = [
   'C',
   'C#',
@@ -53,7 +46,7 @@ export const SCALE_LABELS: Record<ScaleId, string> = {
   minorPentatonic: 'Minor Pentatonic',
 }
 
-export const MODE_IDS = ['single', 'triad', 'seventh', 'ninth', 'clef'] as const
+export const MODE_IDS = ['single', 'triad', 'seventh', 'ninth'] as const
 
 export type QuizModeId = (typeof MODE_IDS)[number]
 
@@ -62,16 +55,7 @@ export const MODE_LABELS: Record<QuizModeId, string> = {
   triad: 'triad',
   seventh: '7th',
   ninth: '9th',
-  clef: 'clef',
 }
-
-export {
-  CLEF_IDS,
-  CLEF_LABELS,
-  NOTE_LETTERS,
-  type ClefId,
-  type NoteLetter,
-} from './clef'
 
 export const CHORD_TYPE_IDS = ['triad', 'seventh', 'ninth'] as const
 
@@ -259,7 +243,7 @@ export function notesMatch(
   return selected.every((n) => want.has(n))
 }
 
-export type QuestionType = 'degreeToNote' | 'noteToDegree' | 'chord' | 'clef'
+export type QuestionType = 'degreeToNote' | 'noteToDegree' | 'chord'
 
 export type DegreeToNoteQuestion = {
   type: 'degreeToNote'
@@ -294,22 +278,10 @@ export type ChordQuestion = {
   choices: string[]
 }
 
-export type ClefQuestion = {
-  type: 'clef'
-  clef: ClefId
-  letter: NoteLetter
-  octave: number
-  step: number
-  prompt: string
-  correctAnswer: string
-  choices: string[]
-}
-
 export type QuizQuestion =
   | DegreeToNoteQuestion
   | NoteToDegreeQuestion
   | ChordQuestion
-  | ClefQuestion
 
 export const QUALITY_DEFS = [
   {
@@ -408,7 +380,6 @@ export type QuizConfig = {
   modes: QuizModeId[]
   answers: AnswerId[]
   qualities: QualityId[]
-  clefs: ClefId[]
 }
 
 export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
@@ -417,7 +388,6 @@ export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
   modes: ['single', 'triad', 'seventh', 'ninth'],
   answers: ['notes', 'degrees'],
   qualities: [...QUALITY_IDS],
-  clefs: ['treble', 'bass'],
 }
 
 function pickRandom<T>(items: readonly T[]): T {
@@ -505,9 +475,6 @@ function playableModes(config: QuizConfig): QuizModeId[] {
   ) {
     modes.push('single')
   }
-  if (config.modes.includes('clef') && config.clefs.length > 0) {
-    modes.push('clef')
-  }
   if (chords.length > 0 && canAnswer) {
     const named = config.roots.length === 0
     const diatonic =
@@ -529,10 +496,7 @@ export function configCanGenerate(config: QuizConfig): boolean {
 
 export function configHint(config: QuizConfig): string | null {
   if (config.modes.length === 0) {
-    return 'select single note, triad, 7th, 9th or clef'
-  }
-  if (config.modes.includes('clef') && config.clefs.length === 0) {
-    return 'select treble or bass clef'
+    return 'select single note, triad, 7th or 9th'
   }
   if (chordModesOf(config).length > 0 && config.answers.length === 0) {
     return 'select notes or degrees'
@@ -548,18 +512,13 @@ export function configHint(config: QuizConfig): string | null {
     if (
       config.modes.includes('single') &&
       config.roots.length === 0 &&
-      chordModesOf(config).length === 0 &&
-      !config.modes.includes('clef')
+      chordModesOf(config).length === 0
     ) {
       return 'select a root note'
     }
     return null
   }
-  if (
-    config.modes.includes('single') &&
-    config.roots.length === 0 &&
-    !config.modes.includes('clef')
-  ) {
+  if (config.modes.includes('single') && config.roots.length === 0) {
     return 'select a root note, or use chords with no root for named chords'
   }
   if (config.modes.includes('single') && config.scales.length === 0) {
@@ -580,20 +539,6 @@ export function generateQuestion(config: QuizConfig): QuizQuestion | null {
   if (modes.length === 0) return null
 
   const mode = pickRandom(modes)
-
-  if (mode === 'clef') {
-    const note = pickClefNote(config.clefs)
-    return {
-      type: 'clef',
-      clef: note.clef,
-      letter: note.letter,
-      octave: note.octave,
-      step: note.step,
-      prompt: 'name this note',
-      correctAnswer: note.letter,
-      choices: [...NOTE_LETTERS],
-    }
-  }
 
   if (mode !== 'single') {
     if (config.roots.length === 0) {
