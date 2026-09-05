@@ -24,10 +24,11 @@ export function renderKeylist(
 ): void {
   container.replaceChildren()
   const mode = options.mode ?? 'single'
-  container.className =
-    mode === 'multi' ? 'keylist keylist--notes' : 'keylist'
-  if (options.choices.length === 12) {
+  container.className = 'keylist'
+  if (options.choices.length === 12 || mode === 'multi') {
     container.classList.add('keylist--notes')
+  } else if (options.choices.length === 7) {
+    container.classList.add('keylist--letters')
   }
 
   const order = shuffle(options.choices)

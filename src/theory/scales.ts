@@ -1,3 +1,10 @@
+import {
+  NOTE_LETTERS,
+  pickClefNote,
+  type ClefId,
+  type NoteLetter,
+} from './clef'
+
 export const ROOT_NOTES = [
   'C',
   'C#',
@@ -46,7 +53,7 @@ export const SCALE_LABELS: Record<ScaleId, string> = {
   minorPentatonic: 'Minor Pentatonic',
 }
 
-export const MODE_IDS = ['single', 'triad', 'seventh', 'ninth'] as const
+export const MODE_IDS = ['single', 'triad', 'seventh', 'ninth', 'clef'] as const
 
 export type QuizModeId = (typeof MODE_IDS)[number]
 
@@ -55,7 +62,16 @@ export const MODE_LABELS: Record<QuizModeId, string> = {
   triad: 'triad',
   seventh: '7th',
   ninth: '9th',
+  clef: 'clef',
 }
+
+export {
+  CLEF_IDS,
+  CLEF_LABELS,
+  NOTE_LETTERS,
+  type ClefId,
+  type NoteLetter,
+} from './clef'
 
 export const CHORD_TYPE_IDS = ['triad', 'seventh', 'ninth'] as const
 
@@ -243,7 +259,7 @@ export function notesMatch(
   return selected.every((n) => want.has(n))
 }
 
-export type QuestionType = 'degreeToNote' | 'noteToDegree' | 'chord'
+export type QuestionType = 'degreeToNote' | 'noteToDegree' | 'chord' | 'clef'
 
 export type DegreeToNoteQuestion = {
   type: 'degreeToNote'
@@ -268,8 +284,8 @@ export type NoteToDegreeQuestion = {
 export type ChordQuestion = {
   type: 'chord'
   root: RootNote
-  scaleId: ScaleId
-  degree: number
+  scaleId?: ScaleId
+  degree?: number
   chordType: ChordTypeId
   answerKind: AnswerId
   prompt: string
@@ -278,16 +294,121 @@ export type ChordQuestion = {
   choices: string[]
 }
 
+export type ClefQuestion = {
+  type: 'clef'
+  clef: ClefId
+  letter: NoteLetter
+  octave: number
+  step: number
+  prompt: string
+  correctAnswer: string
+  choices: string[]
+}
+
 export type QuizQuestion =
   | DegreeToNoteQuestion
   | NoteToDegreeQuestion
   | ChordQuestion
+  | ClefQuestion
+
+export const QUALITY_DEFS = [
+  {
+    id: 'major',
+    type: 'triad',
+    menu: 'major chord',
+    label: 'Major',
+    intervals: [0, 4, 7],
+  },
+  {
+    id: 'minor',
+    type: 'triad',
+    menu: 'minor chord',
+    label: 'minor',
+    intervals: [0, 3, 7],
+  },
+  {
+    id: 'dim',
+    type: 'triad',
+    menu: 'diminished',
+    label: 'dim',
+    intervals: [0, 3, 6],
+  },
+  {
+    id: 'aug',
+    type: 'triad',
+    menu: 'augmented',
+    label: 'aug',
+    intervals: [0, 4, 8],
+  },
+  {
+    id: 'dom7',
+    type: 'seventh',
+    menu: 'dominant 7',
+    label: '7',
+    intervals: [0, 4, 7, 10],
+  },
+  {
+    id: 'maj7',
+    type: 'seventh',
+    menu: 'major 7',
+    label: 'maj7',
+    intervals: [0, 4, 7, 11],
+  },
+  {
+    id: 'm7',
+    type: 'seventh',
+    menu: 'minor 7',
+    label: 'm7',
+    intervals: [0, 3, 7, 10],
+  },
+  {
+    id: 'm7b5',
+    type: 'seventh',
+    menu: 'half-dim 7',
+    label: 'm7b5',
+    intervals: [0, 3, 6, 10],
+  },
+  {
+    id: 'dim7',
+    type: 'seventh',
+    menu: 'dim 7',
+    label: 'dim7',
+    intervals: [0, 3, 6, 9],
+  },
+  {
+    id: 'dom9',
+    type: 'ninth',
+    menu: 'dominant 9',
+    label: '9',
+    intervals: [0, 4, 7, 10, 2],
+  },
+  {
+    id: 'maj9',
+    type: 'ninth',
+    menu: 'major 9',
+    label: 'maj9',
+    intervals: [0, 4, 7, 11, 2],
+  },
+  {
+    id: 'm9',
+    type: 'ninth',
+    menu: 'minor 9',
+    label: 'm9',
+    intervals: [0, 3, 7, 10, 2],
+  },
+] as const
+
+export type QualityId = (typeof QUALITY_DEFS)[number]['id']
+
+export const QUALITY_IDS = QUALITY_DEFS.map((q) => q.id) as QualityId[]
 
 export type QuizConfig = {
   roots: RootNote[]
   scales: ScaleId[]
   modes: QuizModeId[]
   answers: AnswerId[]
+  qualities: QualityId[]
+  clefs: ClefId[]
 }
 
 export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
@@ -295,6 +416,8 @@ export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
   scales: ['major'],
   modes: ['single', 'triad', 'seventh', 'ninth'],
   answers: ['notes', 'degrees'],
+  qualities: [...QUALITY_IDS],
+  clefs: ['treble', 'bass'],
 }
 
 function pickRandom<T>(items: readonly T[]): T {
@@ -302,16 +425,100 @@ function pickRandom<T>(items: readonly T[]): T {
 }
 
 function chordModesOf(config: QuizConfig): ChordTypeId[] {
-  return config.modes.filter((m): m is ChordTypeId => m !== 'single')
+  return config.modes.filter((m): m is ChordTypeId =>
+    m === 'triad' || m === 'seventh' || m === 'ninth',
+  )
+}
+
+function notesFromIntervals(
+  root: RootNote,
+  intervals: readonly number[],
+): RootNote[] {
+  const rootIndex = NOTE_INDEX[root]
+  return intervals.map(
+    (semitones) => ROOT_NOTES[(rootIndex + semitones) % 12],
+  )
+}
+
+type NamedQuality = {
+  id: QualityId
+  type: ChordTypeId
+  menu: string
+  label: string
+  intervals: readonly number[]
+}
+
+function namedPool(config: QuizConfig): NamedQuality[] {
+  const families = new Set(chordModesOf(config))
+  const selected = new Set(config.qualities)
+  return QUALITY_DEFS.filter(
+    (q) => selected.has(q.id) && families.has(q.type),
+  )
+}
+
+function namedChordPrompt(root: RootNote, quality: NamedQuality): string {
+  if (quality.type === 'triad') return `${root} ${quality.label}`
+  return `${root}${quality.label}`
+}
+
+function withChordAnswers(
+  notes: RootNote[],
+  chordType: ChordTypeId,
+  answers: readonly AnswerId[],
+  base: Omit<
+    ChordQuestion,
+    | 'type'
+    | 'chordType'
+    | 'answerKind'
+    | 'correctNotes'
+    | 'correctAnswers'
+    | 'choices'
+  >,
+): ChordQuestion {
+  const formats = answers.length > 0 ? answers : (['notes'] as AnswerId[])
+  const answerKind = pickRandom(formats)
+  const degrees = chordDegreeLabels(notes)
+  return {
+    type: 'chord',
+    ...base,
+    chordType,
+    answerKind,
+    correctNotes: notes,
+    correctAnswers: answerKind === 'degrees' ? degrees : [...notes],
+    choices:
+      answerKind === 'degrees'
+        ? chordType === 'ninth'
+          ? [...NINTH_DEGREE_CHOICES]
+          : [...DEGREE_CHOICES]
+        : [...ROOT_NOTES],
+  }
 }
 
 function playableModes(config: QuizConfig): QuizModeId[] {
-  if (config.roots.length === 0 || config.scales.length === 0) return []
   const modes: QuizModeId[] = []
-  if (config.modes.includes('single')) modes.push('single')
-  const heptatonic = config.scales.some(isHeptatonic)
-  for (const mode of chordModesOf(config)) {
-    if (heptatonic && config.answers.length > 0) modes.push(mode)
+  const chords = chordModesOf(config)
+  const canAnswer = config.answers.length > 0
+  if (
+    config.modes.includes('single') &&
+    config.roots.length > 0 &&
+    config.scales.length > 0
+  ) {
+    modes.push('single')
+  }
+  if (config.modes.includes('clef') && config.clefs.length > 0) {
+    modes.push('clef')
+  }
+  if (chords.length > 0 && canAnswer) {
+    const named = config.roots.length === 0
+    const diatonic =
+      config.roots.length > 0 && config.scales.some(isHeptatonic)
+    if (named && namedPool(config).length > 0) {
+      for (const q of namedPool(config)) {
+        if (!modes.includes(q.type)) modes.push(q.type)
+      }
+    } else if (diatonic) {
+      modes.push(...chords)
+    }
   }
   return modes
 }
@@ -321,35 +528,51 @@ export function configCanGenerate(config: QuizConfig): boolean {
 }
 
 export function configHint(config: QuizConfig): string | null {
-  if (config.roots.length === 0) return 'select at least one root'
-  if (config.scales.length === 0) return 'select at least one scale'
   if (config.modes.length === 0) {
-    return 'select single note, triad, 7th or 9th'
+    return 'select single note, triad, 7th, 9th or clef'
+  }
+  if (config.modes.includes('clef') && config.clefs.length === 0) {
+    return 'select treble or bass clef'
   }
   if (chordModesOf(config).length > 0 && config.answers.length === 0) {
     return 'select notes or degrees'
   }
   if (
-    !config.modes.includes('single') &&
+    config.roots.length === 0 &&
     chordModesOf(config).length > 0 &&
+    namedPool(config).length === 0
+  ) {
+    return 'select a chord type'
+  }
+  if (playableModes(config).length > 0) {
+    if (
+      config.modes.includes('single') &&
+      config.roots.length === 0 &&
+      chordModesOf(config).length === 0 &&
+      !config.modes.includes('clef')
+    ) {
+      return 'select a root note'
+    }
+    return null
+  }
+  if (
+    config.modes.includes('single') &&
+    config.roots.length === 0 &&
+    !config.modes.includes('clef')
+  ) {
+    return 'select a root note, or use chords with no root for named chords'
+  }
+  if (config.modes.includes('single') && config.scales.length === 0) {
+    return 'select at least one scale'
+  }
+  if (
+    chordModesOf(config).length > 0 &&
+    config.roots.length > 0 &&
     !config.scales.some(isHeptatonic)
   ) {
-    return 'chords need a 7-note scale'
+    return 'chords in a key need a 7-note scale'
   }
-  if (
-    config.modes.includes('single') === false &&
-    chordModesOf(config).length === 0
-  ) {
-    return 'select single note, triad, 7th or 9th'
-  }
-  if (
-    chordModesOf(config).length > 0 &&
-    !config.scales.some(isHeptatonic) &&
-    config.modes.includes('single')
-  ) {
-    return 'chords need a 7-note scale'
-  }
-  return null
+  return 'select options in the menus'
 }
 
 export function generateQuestion(config: QuizConfig): QuizQuestion | null {
@@ -357,9 +580,34 @@ export function generateQuestion(config: QuizConfig): QuizQuestion | null {
   if (modes.length === 0) return null
 
   const mode = pickRandom(modes)
-  const root = pickRandom(config.roots)
+
+  if (mode === 'clef') {
+    const note = pickClefNote(config.clefs)
+    return {
+      type: 'clef',
+      clef: note.clef,
+      letter: note.letter,
+      octave: note.octave,
+      step: note.step,
+      prompt: 'name this note',
+      correctAnswer: note.letter,
+      choices: [...NOTE_LETTERS],
+    }
+  }
 
   if (mode !== 'single') {
+    if (config.roots.length === 0) {
+      const pool = namedPool(config).filter((q) => q.type === mode)
+      const quality = pickRandom(pool)
+      const chordRoot = pickRandom(ROOT_NOTES)
+      const notes = notesFromIntervals(chordRoot, quality.intervals)
+      return withChordAnswers(notes, quality.type, config.answers, {
+        root: chordRoot,
+        prompt: namedChordPrompt(chordRoot, quality),
+      })
+    }
+
+    const root = pickRandom(config.roots)
     const scaleId = pickRandom(config.scales.filter(isHeptatonic))
     const scale = buildScale(root, scaleId)
     const degree = pickRandom(
@@ -367,34 +615,19 @@ export function generateQuestion(config: QuizConfig): QuizQuestion | null {
     )
     const notes = diatonicChord(root, scaleId, degree, chordSize(mode))
     const scaleLabel = SCALE_LABELS[scaleId]
-    const formats =
-      config.answers.length > 0 ? config.answers : (['notes'] as AnswerId[])
-    const answerKind = pickRandom(formats)
-    const degrees = chordDegreeLabels(notes)
-    return {
-      type: 'chord',
+    return withChordAnswers(notes, mode, config.answers, {
       root,
       scaleId,
       degree,
-      chordType: mode,
-      answerKind,
       prompt: `${degreeLabel(degree)} ${chordPromptLabel(mode)} of ${root} ${scaleLabel}`,
-      correctNotes: notes,
-      correctAnswers: answerKind === 'degrees' ? degrees : [...notes],
-      choices:
-        answerKind === 'degrees'
-          ? mode === 'ninth'
-            ? [...NINTH_DEGREE_CHOICES]
-            : [...DEGREE_CHOICES]
-          : [...ROOT_NOTES],
-    }
+    })
   }
 
+  const root = pickRandom(config.roots)
   const scaleId = pickRandom(config.scales)
-  const scale = buildScale(root, scaleId)
   const scaleLabel = SCALE_LABELS[scaleId]
   const degree = pickRandom(
-    Array.from({ length: scale.length }, (_, i) => i + 1),
+    Array.from({ length: buildScale(root, scaleId).length }, (_, i) => i + 1),
   )
   const correct = noteAtDegree(root, scaleId, degree)
   return {

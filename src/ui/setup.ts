@@ -1,12 +1,18 @@
 import {
   ANSWER_IDS,
   ANSWER_LABELS,
+  CLEF_IDS,
+  CLEF_LABELS,
   MODE_IDS,
   MODE_LABELS,
+  QUALITY_DEFS,
+  QUALITY_IDS,
   ROOT_NOTES,
   SCALE_IDS,
   SCALE_LABELS,
   type AnswerId,
+  type ClefId,
+  type QualityId,
   type QuizConfig,
   type QuizModeId,
   type RootNote,
@@ -25,6 +31,8 @@ export function renderControls(
   const selectedScales = new Set<ScaleId>(config.scales)
   const selectedModes = new Set<QuizModeId>(config.modes)
   const selectedAnswers = new Set<AnswerId>(config.answers)
+  const selectedQualities = new Set<QualityId>(config.qualities)
+  const selectedClefs = new Set<ClefId>(config.clefs)
 
   const menus = document.createElement('div')
   menus.className = 'menus'
@@ -39,6 +47,8 @@ export function renderControls(
       scales: SCALE_IDS.filter((id) => selectedScales.has(id)),
       modes: MODE_IDS.filter((id) => selectedModes.has(id)),
       answers: ANSWER_IDS.filter((id) => selectedAnswers.has(id)),
+      qualities: QUALITY_IDS.filter((id) => selectedQualities.has(id)),
+      clefs: CLEF_IDS.filter((id) => selectedClefs.has(id)),
     })
     refreshSummaries()
   }
@@ -98,6 +108,26 @@ export function renderControls(
     }
   })
 
+  const qualities = makeMenu('chord-type', 'menu__panel--modes', (panel) => {
+    for (const def of QUALITY_DEFS) {
+      addCheck(panel, def.menu, selectedQualities.has(def.id), (on) => {
+        if (on) selectedQualities.add(def.id)
+        else selectedQualities.delete(def.id)
+        emit()
+      })
+    }
+  })
+
+  const clefs = makeMenu('clef', 'menu__panel--modes', (panel) => {
+    for (const id of CLEF_IDS) {
+      addCheck(panel, CLEF_LABELS[id], selectedClefs.has(id), (on) => {
+        if (on) selectedClefs.add(id)
+        else selectedClefs.delete(id)
+        emit()
+      })
+    }
+  })
+
   const roots = makeMenu('roots', 'menu__panel--keys', (panel) => {
     for (const note of ROOT_NOTES) {
       addCheck(panel, note, selectedRoots.has(note), (on) => {
@@ -130,6 +160,8 @@ export function renderControls(
 
   function refreshSummaries(): void {
     practice.summary.textContent = 'type'
+    qualities.summary.textContent = 'chord type'
+    clefs.summary.textContent = 'clef'
     roots.summary.textContent = 'root note'
     scales.summary.textContent = 'scale'
     answers.summary.textContent = 'degree/notes'

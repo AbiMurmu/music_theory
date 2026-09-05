@@ -133,8 +133,8 @@ body,
   display: grid;
   gap: 0.3rem;
   min-width: 12rem;
-  max-width: calc(100vw - 1.4rem);
-  padding: 0.55rem;
+  max-height: 70dvh;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-2);
@@ -208,6 +208,40 @@ body,
   overflow-wrap: anywhere;
 }
 
+.staff-host {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 7.5rem;
+}
+
+.staff {
+  width: min(100%, 20rem);
+}
+
+.staff__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.staff__line,
+.staff__stem {
+  stroke: var(--fg);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.staff__clef,
+.staff__note {
+  fill: var(--fg);
+}
+
+.staff__clef {
+  font-family: 'Segoe UI Symbol', 'Noto Music', 'Bravura', serif;
+}
+
 .meta {
   margin: 0;
   flex-shrink: 0;
@@ -239,6 +273,11 @@ body,
 .keylist--notes {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(4, minmax(0, 1fr));
+}
+
+.keylist--letters {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
 }
 
 .keylist__btn {
@@ -301,7 +340,7 @@ body,
 
   .menu__summary {
     min-height: 2.5rem;
-    font-size: 0.82rem;
+    font-size: 0.72rem;
   }
 
   .quiz-stage {
@@ -315,6 +354,12 @@ body,
   .keylist--notes {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .keylist--letters {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: 1fr;
     gap: 0.5rem;
   }
 

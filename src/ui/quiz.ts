@@ -1,5 +1,4 @@
 import {
-  chordSize,
   configHint,
   DEFAULT_QUIZ_CONFIG,
   generateQuestion,
@@ -13,6 +12,7 @@ import {
   selectedKeylistValues,
   setKeylistDisabled,
 } from './keylist'
+import { renderStaff } from './staff'
 
 type Score = { correct: number; total: number }
 
@@ -25,6 +25,8 @@ export function renderQuiz(root: HTMLElement): void {
     scales: [...DEFAULT_QUIZ_CONFIG.scales],
     modes: [...DEFAULT_QUIZ_CONFIG.modes],
     answers: [...DEFAULT_QUIZ_CONFIG.answers],
+    qualities: [...DEFAULT_QUIZ_CONFIG.qualities],
+    clefs: [...DEFAULT_QUIZ_CONFIG.clefs],
   }
 
   const toolbar = document.createElement('div')
@@ -41,6 +43,10 @@ export function renderQuiz(root: HTMLElement): void {
   promptEl.className = 'prompt'
   promptEl.setAttribute('aria-live', 'polite')
 
+  const staffEl = document.createElement('div')
+  staffEl.className = 'staff-host'
+  staffEl.hidden = true
+
   const metaEl = document.createElement('p')
   metaEl.className = 'meta'
   metaEl.setAttribute('aria-live', 'assertive')
@@ -49,7 +55,7 @@ export function renderQuiz(root: HTMLElement): void {
 
   const stage = document.createElement('div')
   stage.className = 'quiz-stage'
-  stage.append(promptEl, metaEl, keylistEl)
+  stage.append(promptEl, staffEl, metaEl, keylistEl)
 
   root.append(toolbar, stage)
 
@@ -90,7 +96,7 @@ export function renderQuiz(root: HTMLElement): void {
   function handleChordToggle(): void {
     if (!current || locked || current.type !== 'chord') return
     const selected = selectedKeylistValues(keylistEl)
-    const need = chordSize(current.chordType)
+    const need = current.correctAnswers.length
     if (selected.length < need) return
     const label = current.correctAnswers.join(' ')
     gradeAndAdvance(notesMatch(selected, current.correctAnswers), label)
@@ -101,16 +107,38 @@ export function renderQuiz(root: HTMLElement): void {
     const hint = configHint(config)
     const question = generateQuestion(config)
     if (!question) {
+      staffEl.hidden = true
+      staffEl.replaceChildren()
+      promptEl.hidden = false
+      promptEl.textContent = ''
       setMeta(hint ?? 'select options in the menus', 'warn')
       setKeylistDisabled(keylistEl, true)
       return
     }
 
     current = question
+
+    if (current.type === 'clef') {
+      promptEl.hidden = true
+      promptEl.textContent = ''
+      staffEl.hidden = false
+      renderStaff(staffEl, { clef: current.clef, step: current.step })
+      setMeta('name this note', '')
+      renderKeylist(keylistEl, {
+        choices: current.choices,
+        mode: 'single',
+        onSelect: handleSingle,
+      })
+      return
+    }
+
+    staffEl.hidden = true
+    staffEl.replaceChildren()
+    promptEl.hidden = false
     promptEl.textContent = current.prompt
 
     if (current.type === 'chord') {
-      const n = chordSize(current.chordType)
+      const n = current.correctAnswers.length
       const unit = current.answerKind === 'degrees' ? 'degrees' : 'keys'
       setMeta(`select ${n} ${unit}`, '')
       renderKeylist(keylistEl, {
