@@ -1,8 +1,11 @@
 import {
   CLEF_IDS,
+  LINE_COUNTS,
+  MIN_LINE_COUNT,
   generateClefQuestion,
   type ClefId,
   type ClefQuestion,
+  type LineCount,
 } from '../theory/clef'
 import { renderKeylist, setKeylistDisabled } from './keylist'
 import { renderStaff } from './staff'
@@ -15,6 +18,7 @@ export function renderTheory(root: HTMLElement): void {
   root.className = 'screen theory'
 
   let clefs: ClefId[] = [...CLEF_IDS]
+  let lines: LineCount = MIN_LINE_COUNT
 
   const toolbar = document.createElement('div')
   toolbar.className = 'toolbar'
@@ -31,38 +35,83 @@ export function renderTheory(root: HTMLElement): void {
 
   const selectedClefs = new Set<ClefId>(clefs)
 
-  const details = document.createElement('details')
-  details.className = 'menu'
-  details.dataset.menu = 'clef'
-
-  const summary = document.createElement('summary')
-  summary.className = 'menu__summary'
-  summary.textContent = 'clef'
-
-  const panel = document.createElement('div')
-  panel.className = 'menu__panel menu__panel--modes'
-
-  for (const id of CLEF_IDS) {
-    const label = document.createElement('label')
-    label.className = 'menu-item'
-    const input = document.createElement('input')
-    input.type = 'checkbox'
-    input.checked = selectedClefs.has(id)
-    input.addEventListener('change', () => {
-      if (input.checked) selectedClefs.add(id)
-      else selectedClefs.delete(id)
-      clefs = CLEF_IDS.filter((c) => selectedClefs.has(c))
-      window.clearTimeout(advanceTimer)
-      nextQuestion()
-    })
-    const span = document.createElement('span')
-    span.textContent = id
-    label.append(input, span)
-    panel.appendChild(label)
+  function refreshAndNext(): void {
+    window.clearTimeout(advanceTimer)
+    nextQuestion()
   }
 
-  details.append(summary, panel)
-  menus.appendChild(details)
+  function makeMenu(
+    id: string,
+    summaryText: string,
+    fill: (panel: HTMLElement) => void,
+  ): HTMLDetailsElement {
+    const details = document.createElement('details')
+    details.className = 'menu'
+    details.dataset.menu = id
+
+    const summary = document.createElement('summary')
+    summary.className = 'menu__summary'
+    summary.textContent = summaryText
+
+    const panel = document.createElement('div')
+    panel.className = 'menu__panel menu__panel--modes'
+    fill(panel)
+
+    details.append(summary, panel)
+    details.addEventListener('toggle', () => {
+      if (!details.open) return
+      menus.querySelectorAll('details.menu').forEach((el) => {
+        if (el !== details) (el as HTMLDetailsElement).open = false
+      })
+    })
+    menus.appendChild(details)
+    return details
+  }
+
+  makeMenu('clef', 'clef', (panel) => {
+    for (const id of CLEF_IDS) {
+      const label = document.createElement('label')
+      label.className = 'menu-item'
+      const input = document.createElement('input')
+      input.type = 'checkbox'
+      input.checked = selectedClefs.has(id)
+      input.addEventListener('change', () => {
+        if (input.checked) selectedClefs.add(id)
+        else selectedClefs.delete(id)
+        clefs = CLEF_IDS.filter((c) => selectedClefs.has(c))
+        refreshAndNext()
+      })
+      const span = document.createElement('span')
+      span.textContent = id
+      label.append(input, span)
+      panel.appendChild(label)
+    }
+  })
+
+  const linesMenu = makeMenu('lines', 'lines', (panel) => {
+    for (const count of LINE_COUNTS) {
+      const label = document.createElement('label')
+      label.className = 'menu-item'
+      const input = document.createElement('input')
+      input.type = 'radio'
+      input.name = 'theory-lines'
+      input.checked = count === lines
+      input.addEventListener('change', () => {
+        if (!input.checked) return
+        lines = count
+        linesMenu.querySelector('summary')!.textContent =
+          count === 5 ? '5 lines' : `${count} lines`
+        refreshAndNext()
+      })
+      const span = document.createElement('span')
+      const extra = count - MIN_LINE_COUNT
+      span.textContent =
+        extra === 0 ? '5 (staff only)' : `${count} (+${extra} ledger)`
+      label.append(input, span)
+      panel.appendChild(label)
+    }
+  })
+  linesMenu.querySelector('summary')!.textContent = '5 lines'
 
   toolbar.append(navHost, menus, scoreSlot)
 
@@ -123,7 +172,7 @@ export function renderTheory(root: HTMLElement): void {
       return
     }
 
-    current = generateClefQuestion(clefs)
+    current = generateClefQuestion(clefs, lines)
     renderStaff(staffEl, { clef: current.clef, step: current.step })
     setMeta('which note?', '')
     renderKeylist(keylistEl, {

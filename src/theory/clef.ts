@@ -70,14 +70,25 @@ export type StaffNote = {
   label: string
 }
 
-/** Inclusive step ranges (ledger lines included). */
-const CLEF_STEP_RANGE: Record<ClefId, readonly [number, number]> = {
-  treble: [-5, 12], // F3 … C6
-  bass: [-5, 12], // C2 … E4
+/** How many staff/ledger lines to use (5 = staff only). */
+export const LINE_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
+
+export type LineCount = (typeof LINE_COUNTS)[number]
+
+export const MIN_LINE_COUNT: LineCount = 5
+
+/** Step range for a line count: 5 → staff only; each +1 adds a ledger above & below. */
+export function stepRangeForLines(lines: number): readonly [number, number] {
+  const count = Math.max(MIN_LINE_COUNT, Math.floor(lines))
+  const extra = count - MIN_LINE_COUNT
+  return [-2 * extra, 8 + 2 * extra]
 }
 
-export function notesForClef(clef: ClefId): StaffNote[] {
-  const [lo, hi] = CLEF_STEP_RANGE[clef]
+export function notesForClef(
+  clef: ClefId,
+  lines: number = MIN_LINE_COUNT,
+): StaffNote[] {
+  const [lo, hi] = stepRangeForLines(lines)
   const notes: StaffNote[] = []
   for (let step = lo; step <= hi; step++) {
     const { letter, octave } = noteFromDiatonic(CLEF_BOTTOM[clef] + step)
@@ -104,9 +115,10 @@ export type ClefQuestion = {
 
 export function generateClefQuestion(
   clefs: readonly ClefId[] = CLEF_IDS,
+  lines: number = MIN_LINE_COUNT,
 ): ClefQuestion {
   const active = clefs.length > 0 ? clefs : CLEF_IDS
-  const pool = active.flatMap((clef) => notesForClef(clef))
+  const pool = active.flatMap((clef) => notesForClef(clef, lines))
   const note = pool[Math.floor(Math.random() * pool.length)]
   const choiceSet = new Set(pool.map((n) => n.label))
   return {
