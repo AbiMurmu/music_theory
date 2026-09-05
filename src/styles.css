@@ -213,11 +213,12 @@ body,
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 7.5rem;
+  min-height: 9rem;
+  padding: 0.25rem 0;
 }
 
 .staff {
-  width: min(100%, 20rem);
+  width: min(100%, 22rem);
 }
 
 .staff__svg {
@@ -229,17 +230,22 @@ body,
 .staff__line,
 .staff__stem {
   stroke: var(--fg);
-  stroke-width: 1.5;
+  stroke-width: 1.75;
   fill: none;
+  stroke-linecap: round;
 }
 
-.staff__clef,
-.staff__note {
+.staff__ledger {
+  stroke-width: 1.75;
+}
+
+.staff__note,
+.staff__clef-fill {
   fill: var(--fg);
 }
 
-.staff__clef {
-  font-family: 'Segoe UI Symbol', 'Noto Music', 'Bravura', serif;
+.staff__clef-eye {
+  fill: var(--bg-2);
 }
 
 .meta {

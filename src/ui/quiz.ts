@@ -123,7 +123,7 @@ export function renderQuiz(root: HTMLElement): void {
       promptEl.textContent = ''
       staffEl.hidden = false
       renderStaff(staffEl, { clef: current.clef, step: current.step })
-      setMeta('name this note', '')
+      setMeta('look at the clef — which note is this?', '')
       renderKeylist(keylistEl, {
         choices: current.choices,
         mode: 'single',

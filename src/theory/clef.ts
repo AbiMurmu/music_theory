@@ -54,10 +54,10 @@ export type StaffNote = {
   step: number
 }
 
-/** Inclusive step ranges (ledger lines included). */
+/** Inclusive step ranges (ledger lines included) — low through high. */
 const CLEF_STEP_RANGE: Record<ClefId, readonly [number, number]> = {
-  treble: [-2, 10], // C4 … A5
-  bass: [-2, 10], // E2 … C4
+  treble: [-5, 12], // F3 … C6
+  bass: [-5, 12], // C2 … E4
 }
 
 export function notesForClef(clef: ClefId): StaffNote[] {
