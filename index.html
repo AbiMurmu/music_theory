@@ -180,6 +180,28 @@ ul.tight{margin:6px 0 0; padding-left:18px; font-size:13.5px; color:var(--muted)
 .tchip.sm{padding:7px 8px; gap:6px}
 .tchip.sm b{font-family:var(--font-mono)}
 .tchip.sm .box{width:14px; height:14px; font-size:10px; margin-top:3px}
+/* Mobile */
+html{-webkit-text-size-adjust:100%}
+button{touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+.opt{min-height:50px}
+.gear{display:none}
+@media (max-width:700px){
+  body{padding-block:14px 90px}
+  .wrap{gap:16px}
+  .top::after{display:none}
+  .top h1{font-size:26px}
+  .top p{font-size:14px}
+  .card{padding:14px; gap:14px}
+  .prompt{font-size:20px}
+  .opts{gap:8px}
+  #checkBtn,#nextBtn{width:100%; min-height:52px}
+  .seg button{padding:10px 12px}
+  .tchip:not(.sm){min-height:48px}
+  .tchip.sm{min-height:40px}
+  .side summary{padding:15px 16px}
+  .setbody{padding:4px 12px 14px}
+  .gear{display:block; position:fixed; right:max(14px,env(safe-area-inset-right,0px)); bottom:max(14px,env(safe-area-inset-bottom,0px)); z-index:20; background:var(--accent); color:var(--accent-fg); border:0; border-radius:999px; padding:13px 18px; font:600 15px var(--font-body); box-shadow:0 4px 14px rgba(0,0,0,.28)}
+}
 </style>
 
 <div class="wrap">
@@ -1095,7 +1117,7 @@ const wide=window.matchMedia?window.matchMedia('(min-width:900px)').matches:true
 app.innerHTML=
  '<div class="layout"><section id="quiz" class="qcol"></section>'+
  '<aside class="side"><details id="settings"'+(wide?' open':'')+'><summary>Settings <span class="live">changes apply instantly</span></summary><div id="setbody" class="setbody"></div></details>'+
- '<details id="progress" class="prog"><summary>Progress</summary><div id="probody" class="setbody"></div></details></aside></div>';
+ '<details id="progress" class="prog"><summary>Progress</summary><div id="probody" class="setbody"></div></details></aside><button type="button" class="gear" data-act="gear">⚙ Settings</button></div>';
 const $q=document.getElementById('quiz'),$s=document.getElementById('setbody'),$p=document.getElementById('probody');
 
 const GTEXT={
@@ -1126,7 +1148,7 @@ const chapSel=id=>{const a=S.set.chap&&S.set.chap[S.set.grade];return !a||a.incl
 const topicOn=t=>t.basics?(S.set.topics[t.id]&&S.set.mode==='basics'):(S.set.mode!=='basics'&&CHAPS.some(c=>c.t.includes(t.id)&&chapSel(c.id))&&t.min<=S.set.grade&&(!t.vex||hasVex()));
 function chapSettings(){
   const g=S.set.grade;
-  return '<p class="hint">Tick the chapters to practise. Questions come only from ticked chapters, at Grade '+g+' level.</p><div class="tgrid">'+CHAPS.map(c=>{
+  return '<p class="hint">Tick the chapters to practise. Questions come only from ticked chapters, at Grade '+g+' level.</p><div class="tgrid">'+CHAPS.filter(c=>chapTopics(c).some(t=>t.min<=g&&(!t.vex||hasVex()))).map(c=>{
     const ts=chapTopics(c),av=ts.filter(t=>t.min<=g&&(!t.vex||hasVex())),from=Math.min(...ts.map(t=>t.min)),off=!av.length;
     const nw=ts.filter(t=>t.min===g).map(t=>t.label);
     return '<button type="button" class="tchip" role="checkbox" data-chap="'+c.id+'" aria-checked="'+(!off&&chapSel(c.id))+'"'+(off?' disabled':'')+'><span class="box" aria-hidden="true">✓</span><span><b>'+c.l+'</b><small>'+(off?'From Grade '+from:av.map(t=>t.label).join(' · ')+(nw.length?'. New this grade: '+nw.join(', '):''))+'</small></span></button>';
@@ -1297,6 +1319,7 @@ document.addEventListener('click',e=>{
     case'all':TOPICS.forEach(x=>{S.set.topics[x.id]=true;});save();renderSettings('[data-act="all"]');applyLive();break;
     case'next':nextQ();break;
     case'check':checkMulti();break;
+    case'gear':{const d=document.getElementById('settings');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});break;}
     case'chap-all':S.set.chap=S.set.chap||{};delete S.set.chap[S.set.grade];save();renderSettings('[data-act="chap-all"]');applyLive();break;
     case'tonics-all':S.set.bscale.tonics=BTONICS.slice();save();renderSettings('[data-act="tonics-all"]');applyLive();break;
     case'tonics-nat':S.set.bscale.tonics=['C','D','E','F','G','A','B'];save();renderSettings('[data-act="tonics-nat"]');applyLive();break;
