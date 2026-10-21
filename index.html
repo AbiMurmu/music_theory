@@ -1,17 +1,1314 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <meta name="color-scheme" content="dark" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>theory quiz</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
-</html>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Theory Drills</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500..800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+<style>
+/* Layout: one centred practice column. Setup -> quiz card -> results. Notation always sits on a fixed light "paper" panel so the ink stays legible in either theme. */
+:root{
+  --bg:#E8EBEE; --surface:#F6F7F9; --fg:#13171C; --muted:#56616C; --line:#C8CFD6;
+  --accent:#2646C8; --accent-fg:#FFFFFF; --accent-soft:#DCE3FB;
+  --ok:#17784A; --ok-bg:#D9F0E3; --bad:#B3261E; --bad-bg:#F8DEDA;
+  --paper:#FDFDFB; --ink:#12161B;
+  --font-display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --font-body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','DejaVu Sans Mono','Segoe UI Symbol','Apple Symbols',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1318; --surface:#1A2028; --fg:#E7EBEF; --muted:#9AA5B0; --line:#2D3640;
+    --accent:#93A8FF; --accent-fg:#0D1432; --accent-soft:#222C55;
+    --ok:#62D194; --ok-bg:#12301F; --bad:#FF8F85; --bad-bg:#3A1816;
+    --paper:#EEEFEC; --ink:#12161B; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1318; --surface:#1A2028; --fg:#E7EBEF; --muted:#9AA5B0; --line:#2D3640;
+  --accent:#93A8FF; --accent-fg:#0D1432; --accent-soft:#222C55;
+  --ok:#62D194; --ok-bg:#12301F; --bad:#FF8F85; --bad-bg:#3A1816;
+  --paper:#EEEFEC; --ink:#12161B; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); font:15px/1.5 var(--font-body);
+  padding-block:22px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap{max-width:1040px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+.top{position:relative; padding-bottom:14px; border-bottom:1px solid var(--line)}
+.top h1{font:700 32px/1.1 var(--font-display); letter-spacing:-.02em; margin:0 0 6px}
+.top p{margin:0; color:var(--muted); max-width:46ch}
+.top::after{
+  content:""; position:absolute; right:0; top:6px; width:min(34%,200px); height:40px; opacity:.55;
+  background:repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 10px);
+}
+h2,h3{font-family:var(--font-display); margin:0}
+.sect{display:flex; flex-direction:column; gap:10px}
+.sect > h3{font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600}
+.hint{margin:0; color:var(--muted); font-size:13.5px}
+button{font:inherit; color:inherit; cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.seg{display:flex; flex-wrap:wrap; gap:8px}
+.seg button{
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 14px; min-width:0;
+  text-align:left; display:flex; flex-direction:column; gap:1px;
+}
+.seg button b{font-weight:600}
+.seg button small{color:var(--muted); font-size:12.5px}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.seg button[aria-pressed="true"] small{color:inherit; opacity:.85}
+.group{display:flex; flex-direction:column; gap:8px}
+.ghead{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+.ghead h4{margin:0; font:600 16px/1.3 var(--font-display)}
+.link{background:none; border:0; padding:4px 0; color:var(--accent); font-size:13.5px; text-decoration:underline; text-underline-offset:3px}
+.tgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:8px}
+.tchip{
+  display:flex; align-items:flex-start; gap:10px; text-align:left; min-width:0;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+}
+.tchip .box{flex:none; width:18px; height:18px; margin-top:2px; border:2px solid var(--muted); border-radius:4px; display:grid; place-items:center; font-size:12px; line-height:1; color:transparent}
+.tchip[aria-checked="true"]{border-color:var(--accent); background:var(--accent-soft)}
+.tchip[aria-checked="true"] .box{background:var(--accent); border-color:var(--accent); color:var(--accent-fg)}
+.tchip b{display:block; font-weight:600}
+.tchip small{display:block; color:var(--muted); font-size:12.5px}
+.tchip[disabled]{opacity:.5; cursor:not-allowed}
+.btn{
+  background:var(--accent); color:var(--accent-fg); border:0; border-radius:8px; padding:13px 22px;
+  font-weight:600; font-size:16px; align-self:flex-start;
+}
+.btn[disabled]{opacity:.45; cursor:not-allowed}
+.btn.ghost{background:transparent; color:var(--fg); border:1px solid var(--line)}
+.notice{background:var(--bad-bg); border:1px solid var(--bad); border-radius:8px; padding:10px 12px; font-size:14px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:16px; min-width:0}
+.qhead{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13.5px; color:var(--muted)}
+.qhead .tag{font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:12px}
+.bar{height:6px; border-radius:3px; background:var(--line); overflow:hidden}
+.bar i{display:block; height:100%; background:var(--accent); transition:width .25s}
+.prompt{font:600 24px/1.3 var(--font-display); letter-spacing:-.01em; text-wrap:balance; margin:0}
+.prompt b{color:var(--accent); font-weight:700}
+.sub{margin:-8px 0 0; color:var(--muted); font-size:14px}
+.paper{
+  background:var(--paper); color:var(--ink); border-radius:8px; border:1px solid var(--line);
+  padding:6px 10px; display:flex; justify-content:center;
+}
+.paper svg{width:100%; max-width:560px; height:auto; display:block}
+.opts{display:grid; gap:10px}
+.opts.g12{grid-template-columns:repeat(4,minmax(0,1fr))}
+.opts.g7{grid-template-columns:repeat(auto-fit,minmax(112px,1fr))}
+.opts.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:600px){ .opts.g12{grid-template-columns:repeat(6,minmax(0,1fr))} }
+.opt{
+  background:var(--bg); border:1.5px solid var(--line); border-radius:8px; padding:12px 6px; min-height:54px; min-width:0;
+  font:600 18px/1.25 var(--font-mono); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; text-align:center;
+  overflow-wrap:anywhere;
+}
+.opt small{font:400 12.5px/1.2 var(--font-body); color:var(--muted)}
+.opt:hover:not([disabled]){border-color:var(--accent)}
+.opt[disabled]{cursor:default}
+.opt.right{background:var(--ok-bg); border-color:var(--ok)}
+.opt.wrong{background:var(--bad-bg); border-color:var(--bad)}
+.opt.dim{opacity:.55}
+.fb{display:flex; flex-direction:column; gap:12px; min-height:0}
+.verdict{font:700 18px/1.3 var(--font-display)}
+.verdict.ok{color:var(--ok)} .verdict.no{color:var(--bad)}
+.fb p{margin:0}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.c{
+  display:flex; flex-direction:column; align-items:center; min-width:44px; padding:5px 8px; border-radius:6px;
+  background:var(--bg); border:1px solid var(--line); font:600 15px/1.2 var(--font-mono);
+}
+.c small{font:500 11px/1.3 var(--font-body); color:var(--muted)}
+.c.hi{background:var(--accent); border-color:var(--accent); color:var(--accent-fg)}
+.c.hi small{color:inherit; opacity:.85}
+.score{font:700 64px/1 var(--font-display); letter-spacing:-.03em}
+.score span{font-size:28px; color:var(--muted); font-weight:600}
+.rows{display:flex; flex-direction:column; gap:10px}
+.trow{display:grid; grid-template-columns:minmax(0,150px) 1fr 52px; gap:10px; align-items:center; font-size:14px}
+.trow .bar{height:8px}
+.trow .bar i.good{background:var(--ok)}
+.trow output{text-align:right; font:600 13px var(--font-mono); font-variant-numeric:tabular-nums}
+.miss{display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding-top:12px}
+.miss .paper{justify-content:flex-start}
+.miss .paper svg{max-width:300px}
+.miss .a{font:600 14px var(--font-mono); color:var(--ok)}
+.actions{display:flex; flex-wrap:wrap; gap:10px}
+footer{color:var(--muted); font-size:12.5px; max-width:70ch}
+@media (max-width:420px){
+  .prompt{font-size:21px} .top h1{font-size:27px}
+  .trow{grid-template-columns:minmax(0,104px) 1fr 46px}
+}
+@media (prefers-reduced-motion: reduce){ .bar i{transition:none} }
+
+.layout{display:grid; grid-template-columns:minmax(0,1fr); gap:18px; align-items:start}
+@media (min-width:900px){ .layout{grid-template-columns:minmax(0,1fr) 340px} .side{position:sticky; top:16px} }
+.qcol{min-width:0}
+.side{display:flex; flex-direction:column; gap:12px; min-width:0}
+.side details{background:var(--surface); border:1px solid var(--line); border-radius:12px; min-width:0}
+.side summary{cursor:pointer; padding:13px 16px; font:600 16px var(--font-display); display:flex; justify-content:space-between; align-items:baseline; gap:10px; list-style:none}
+.side summary::-webkit-details-marker{display:none}
+.side summary::after{content:"▾"; color:var(--muted); margin-left:auto}
+.side details[open] summary::after{content:"▴"}
+.side summary:focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:12px}
+.live{font:400 12.5px var(--font-body); color:var(--muted)}
+.setbody{padding:4px 16px 16px; display:flex; flex-direction:column; gap:18px}
+.side .tgrid{grid-template-columns:minmax(0,1fr)}
+.side .seg button{padding:8px 12px}
+.btn.small{padding:9px 14px; font-size:14px}
+.statline{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; color:var(--muted)}
+.statline b{color:var(--fg); font-family:var(--font-mono)}
+.mlist{display:flex; flex-direction:column; gap:6px; border-top:1px solid var(--line); padding-top:10px}
+.mi{display:flex; justify-content:space-between; gap:12px; font-size:13px; color:var(--muted)}
+.mi b{font:600 13px var(--font-mono); color:var(--ok); text-align:right; flex:none; max-width:45%; overflow-wrap:anywhere}
+.stat{font-variant-numeric:tabular-nums}
+
+.opts.g1{grid-template-columns:minmax(0,1fr)}
+.opts.txt .opt{font:500 16px/1.35 var(--font-body); text-align:left; align-items:flex-start; padding:12px 14px}
+.seg.nums{flex-wrap:nowrap}
+.seg.nums button{flex:1; min-width:0; align-items:center; text-align:center; padding:9px 0}
+ul.tight{margin:6px 0 0; padding-left:18px; font-size:13.5px; color:var(--muted)}
+@media (min-width:900px){ .side{max-height:calc(100vh - 32px); overflow-y:auto} }
+.paper svg{max-width:560px}
+.opts.g8{grid-template-columns:repeat(4,minmax(0,1fr))}
+.opts.g10{grid-template-columns:repeat(5,minmax(0,1fr))}
+.opts.g10 .opt{padding:12px 2px; font-size:16px}
+.opt.sel:not(.right):not(.wrong){background:var(--accent-soft); border-color:var(--accent)}
+.opt.missed{border-style:dashed}
+.side .tgrid.cmp{grid-template-columns:repeat(auto-fill,minmax(66px,1fr))}
+.tchip.sm{padding:7px 8px; gap:6px}
+.tchip.sm b{font-family:var(--font-mono)}
+.tchip.sm .box{width:14px; height:14px; font-size:10px; margin-top:3px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Theory Drills</h1>
+    <p>An endless theory quiz: Basics with no notation, plus Trinity-style Grades 1 to 8. Change settings at any time and the next question follows.</p>
+  </header>
+  <main id="app"></main>
+  <footer>Grade content follows the usual Trinity College London theory progression in spirit, but it is an approximation. Check the current syllabus for exact exam requirements. Minor keys use natural minor for scales at Grades 1 and 2, with harmonic and melodic minor added from Grade 3. Counting uses UK terms (crotchet = quarter note).</footer>
+</div>
+
+<script>
+// ==THEORY START==
+const L=['C','D','E','F','G','A','B'];
+const NAT=[0,2,4,5,7,9,11];
+const mod=(a,n)=>((a%n)+n)%n;
+const accStr=a=>a===0?'':(a>0?'♯':'♭').repeat(Math.abs(a));
+const nm=n=>L[n.l]+accStr(n.a);
+const pc=n=>mod(NAT[n.l]+n.a,12);
+function parseN(s){const l=L.indexOf(s[0]);let a=0;if(s[1]==='♯')a=1;if(s[1]==='♭')a=-1;return{l,a};}
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const accV=a=>({'-2':'bb','-1':'b','1':'#','2':'##'})[a]||null;
+const accLimit=g=>g>=8?2:1;
+const maxAcc=sc=>Math.max(...sc.map(n=>Math.abs(n.a)));
+
+// Scale patterns, semitones above the tonic
+const PAT={
+  major:[0,2,4,5,7,9,11],natural:[0,2,3,5,7,8,10],harmonic:[0,2,3,5,7,8,11],melodic:[0,2,3,5,7,9,11],
+  dorian:[0,2,3,5,7,9,10],mixolydian:[0,2,4,5,7,9,10],lydian:[0,2,4,6,7,9,11],phrygian:[0,1,3,5,7,8,10],locrian:[0,1,3,5,6,8,10]
+};
+function scaleBy(tonic,type){
+  const t=parseN(tonic),tp=pc(t);
+  return PAT[type].map((s,k)=>{const l=(t.l+k)%7;return{l,a:mod(tp+s-NAT[l]+6,12)-6};});
+}
+function scName(tonic,type,g){
+  switch(type){
+    case'major':return tonic+' major';
+    case'natural':return tonic+(g>=3?' natural minor':' minor');
+    case'harmonic':return tonic+' harmonic minor';
+    case'melodic':return tonic+' melodic minor (ascending)';
+    default:return tonic+' '+cap(type);
+  }
+}
+const ORD=['1st','2nd','3rd','4th','5th','6th','7th'];
+const ROM=['I','II','III','IV','V','VI','VII'];
+const DEG_MAJ=['tonic','supertonic','mediant','subdominant','dominant','submediant','leading note'];
+const DEG_MIN=['tonic','supertonic','mediant','subdominant','dominant','submediant','subtonic'];
+function degNames(type){
+  if(type==='major')return DEG_MAJ;
+  if(type==='natural')return DEG_MIN;
+  if(type==='harmonic'){const a=DEG_MIN.slice();a[6]='leading note';return a;}
+  return null;
+}
+const SHARP12=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const FLAT12=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+
+// Keys unlocked at each grade (up to 7 sharps or flats by Grade 7)
+const KEYADD={
+  1:{M:['C','G','F'],m:[]},
+  2:{M:['D','B♭'],m:['A','E','D']},
+  3:{M:['A','E♭'],m:['B','G','F♯','C']},
+  4:{M:['E','A♭'],m:['C♯','F']},
+  5:{M:['B','D♭'],m:['G♯','B♭']},
+  6:{M:['F♯','G♭'],m:['D♯','E♭']},
+  7:{M:['C♯','C♭'],m:['A♯','A♭']},
+  8:{M:[],m:[]}
+};
+function keysFor(set){
+  const up=set.keys==='all'?7:Math.min(7,set.grade),out=[];
+  for(let g=1;g<=up;g++){
+    KEYADD[g].M.forEach(t=>out.push({t,q:'major'}));
+    KEYADD[g].m.forEach(t=>out.push({t,q:'minor'}));
+  }
+  return out;
+}
+const keyName=k=>k.t+' '+k.q;
+function sigOf(key){
+  const sc=scaleBy(key.t,key.q==='major'?'major':'natural');
+  const n=sc.filter(x=>x.a!==0).length;
+  return{n,sharp:sc.some(x=>x.a>0),sc};
+}
+const SHARP_ORDER=['F','C','G','D','A','E','B'];
+const FLAT_ORDER=['B','E','A','D','G','C','F'];
+const sigLabel=(n,sharp)=>n===0?'No sharps or flats':n+' '+(sharp?'sharp':'flat')+(n>1?'s':'');
+const sigList=(n,sharp)=>(sharp?SHARP_ORDER:FLAT_ORDER).slice(0,n).map(x=>x+(sharp?'♯':'♭')).join(' ');
+const vexKey=k=>k.t.replace('♯','#').replace('♭','b')+(k.q==='minor'?'m':'');
+
+// Pick a key and a scale type allowed at this grade (modes from Grade 6)
+function pickScale(set){
+  const g=set.grade,keys=keysFor(set);
+  for(let i=0;i<60;i++){
+    const key=pick(keys);let type;
+    if(key.q==='major'){
+      const modes=g>=7?['dorian','mixolydian','lydian','phrygian']:g>=6?['dorian','mixolydian']:[];
+      type=(modes.length&&Math.random()<0.25)?pick(modes):'major';
+    }else type=g>=3?pick(['natural','harmonic','melodic']):'natural';
+    const sc=scaleBy(key.t,type);
+    if(maxAcc(sc)<=accLimit(g))return{key,type,tonic:key.t,sc};
+  }
+  return{key:{t:'C',q:'major'},type:'major',tonic:'C',sc:scaleBy('C','major')};
+}
+// Chords use the major scale, and the harmonic minor from Grade 3 (natural minor before)
+function pickChordKey(set){
+  const g=set.grade,keys=keysFor(set);
+  for(let i=0;i<60;i++){
+    const key=pick(keys),type=key.q==='major'?'major':(g>=3?'harmonic':'natural');
+    const sc=scaleBy(key.t,type);
+    if(maxAcc(sc)<=accLimit(g))return{key,type,sc};
+  }
+  return{key:{t:'C',q:'major'},type:'major',sc:scaleBy('C','major')};
+}
+const minorNote=(key,type)=>key.q==='minor'?(type==='harmonic'?'Harmonic minor scale.':'Natural minor scale.'):'';
+
+function chordFrom(notes){
+  const [r,t,f]=notes;
+  const third=mod(pc(t)-pc(r),12),fifth=mod(pc(f)-pc(r),12);
+  const q=third===4?(fifth===8?'augmented':'major'):(fifth===6?'diminished':'minor');
+  return{notes,q,root:r};
+}
+const chordAt=(sc,d)=>chordFrom([sc[d],sc[(d+2)%7],sc[(d+4)%7]]);
+const chordStr=c=>c.notes.map(nm).join(' ');
+const chordLabel=c=>nm(c.root)+' '+c.q;
+const chordShort=c=>nm(c.root)+({major:'',minor:'m',diminished:'dim',augmented:'aug'})[c.q];
+const roman=(d,q)=>q==='major'?ROM[d]:q==='augmented'?ROM[d]+'+':ROM[d].toLowerCase()+(q==='diminished'?'°':'');
+const alter=(n,delta)=>({l:n.l,a:n.a+delta});
+function wrongQuality(c){
+  const [r,t,f]=c.notes;
+  if(c.q==='major')return chordFrom([r,alter(t,-1),f]);
+  if(c.q==='minor')return chordFrom([r,alter(t,1),f]);
+  if(c.q==='diminished')return chordFrom([r,t,alter(f,1)]);
+  return chordFrom([r,t,alter(f,-1)]);
+}
+function scaleRow(sc,hi){
+  return '<div class="chips">'+sc.map((n,i)=>'<span class="c'+(i===hi?' hi':'')+'"><small>'+(i+1)+'</small>'+nm(n)+'</span>').join('')+'</div>';
+}
+function chordRow(sc,hi){
+  return '<div class="chips">'+sc.map((_,i)=>{const c=chordAt(sc,i);return '<span class="c'+(i===hi?' hi':'')+'"><small>'+roman(i,c.q)+'</small>'+chordShort(c)+'</span>';}).join('')+'</div>';
+}
+// Build 4 shuffled options: the answer plus 3 unique distractors from a candidate list
+function mkOpts(ans,cands){
+  const seen=new Set([ans.label]),ds=[];
+  for(const c of cands){if(!seen.has(c.label)){seen.add(c.label);ds.push(c);if(ds.length===3)break;}}
+  return shuffle([ans].concat(ds));
+}
+const lab=s=>({id:s,label:s});
+
+// ---------- Staff and rhythm ----------
+function clefsFor(g){const c=['treble','bass'];if(g>=5)c.push('alto');if(g>=7)c.push('tenor');return c;}
+function rangeFor(g,clef){
+  if(clef==='treble')return g<=1?[28,39]:g===2?[26,42]:g<=4?[26,41]:[24,43];
+  if(clef==='bass')return g<=1?[17,28]:g===2?[14,30]:g<=4?[13,30]:[11,32];
+  if(clef==='alto')return[20,36];
+  return[18,34];
+}
+const CLEFHELP={
+  treble:'Treble clef. Lines: E G B D F. Spaces: F A C E.',
+  bass:'Bass clef. Lines: G B D F A. Spaces: A C E G.',
+  alto:'Alto clef. The middle line is middle C. Lines: F A C E G. Spaces: G B D F.',
+  tenor:'Tenor clef. Middle C is on the 4th line up. Lines: D F A C E. Spaces: E G B D.'
+};
+const diaKey=dia=>L[mod(dia,7)].toLowerCase()+'/'+Math.floor(dia/7);
+const noteSpec=(n,dia,extra)=>({key:diaKey(dia),acc:accV(n.a),dur:'q',...(extra||{})});
+// Letters that need a double step in simple notation (E#, B#, Cb, Fb) are kept for Grade 5 and up
+const oddAcc=n=>(n.a===1&&[2,6].includes(n.l))||(n.a===-1&&[0,3].includes(n.l));
+
+function qNoteName(set){
+  const g=set.grade,clef=pick(clefsFor(g)),[lo,hi]=rangeFor(g,clef);
+  const dia=lo+rnd(hi-lo+1),l=mod(dia,7),oct=Math.floor(dia/7);
+  let a=0;
+  if(g>=2&&Math.random()<0.38){a=Math.random()<0.5?1:-1;if(g>=8&&Math.random()<0.15)a*=2;}
+  if(g<5&&oddAcc({l,a}))a=-a;
+  const note={l,a},label=nm(note);
+  const cands=[];
+  for(const dl of[-2,-1,1,2])cands.push({l:mod(l+dl,7),a});
+  for(const x of[-1,0,1])if(x!==a)cands.push({l,a:x});
+  const good=shuffle(cands).filter(n=>g>=5||!oddAcc(n));
+  const opts=mkOpts(lab(label),good.map(n=>lab(nm(n))));
+  return{
+    topic:'note-name',label:'Note names',html:'Name this note.',sub:cap(clef)+' clef',
+    staff:{clef,notes:[noteSpec(note,dia)]},opts,ans:label,layout:'g4',
+    fb:'<p>This note is <b>'+label+'</b> ('+label+oct+(label==='C'&&oct===4?', middle C':'')+').</p><p>'+CLEFHELP[clef]+'</p>',
+    review:'Name the note ('+clef+' clef)'
+  };
+}
+
+const VALUES=[
+  {dur:'w',dots:0,name:'semibreve',us:'whole',beats:4,g:1},
+  {dur:'h',dots:0,name:'minim',us:'half',beats:2,g:1},
+  {dur:'q',dots:0,name:'crotchet',us:'quarter',beats:1,g:1},
+  {dur:'8',dots:0,name:'quaver',us:'eighth',beats:0.5,g:1},
+  {dur:'h',dots:1,name:'dotted minim',us:'dotted half',beats:3,g:2},
+  {dur:'q',dots:1,name:'dotted crotchet',us:'dotted quarter',beats:1.5,g:2},
+  {dur:'16',dots:0,name:'semiquaver',us:'sixteenth',beats:0.25,g:2},
+  {dur:'8',dots:1,name:'dotted quaver',us:'dotted eighth',beats:0.75,g:4},
+  {dur:'32',dots:0,name:'demisemiquaver',us:'thirty-second',beats:0.125,g:4}
+];
+const BEATLAB={4:'4 beats',3:'3 beats',2:'2 beats',1.5:'1½ beats',1:'1 beat',0.5:'½ beat',0.75:'¾ beat',0.25:'¼ beat',0.125:'⅛ beat'};
+function qNoteValue(set){
+  const g=set.grade,rest=Math.random()<0.35;
+  const pool=VALUES.filter(v=>v.g<=g&&(!rest||!v.dots));
+  const v=pick(pool),ask=Math.random()<0.5?'name':'beats';
+  const kind=rest?' rest':'',what=rest?'rest':'note';
+  const staff={clef:'treble',notes:[{key:'b/4',dur:v.dur,dots:v.dots,rest}]};
+  let opts,ans,html;
+  if(ask==='name'){
+    const ds=shuffle(pool.filter(x=>x!==v)).slice(0,3);
+    opts=shuffle([v].concat(ds)).map(x=>({id:x.name,label:cap(x.name)+kind,sub:x.us+' '+what}));
+    ans=v.name;html='What is this '+what+' called?';
+  }else{
+    const bs=[...new Set(pool.map(x=>x.beats))].filter(b=>b!==v.beats);
+    opts=shuffle([v.beats].concat(shuffle(bs).slice(0,3))).map(b=>({id:String(b),label:BEATLAB[b]}));
+    ans=String(v.beats);html='How many crotchet beats is this '+what+' worth?';
+  }
+  return{
+    topic:'note-value',label:'Note and rest values',html,sub:'',staff,opts,ans,layout:'g4',
+    fb:'<p>A <b>'+v.name+kind+'</b> ('+v.us+' '+what+') is worth <b>'+BEATLAB[v.beats]+'</b>, counting in crotchet beats.</p>',
+    review:'Identify a '+what
+  };
+}
+
+function tsPool(g){
+  const p=['2/4','3/4','4/4'];
+  if(g>=2)p.push('2/2','6/8');
+  if(g>=3)p.push('3/2','12/8');
+  if(g>=4)p.push('3/8','9/8');
+  if(g>=6)p.push('5/4','7/8');
+  return p;
+}
+function tsInfo(ts){
+  const [top,bot]=ts.split('/').map(Number);
+  const compound=bot===8&&top%3===0&&top>=6;
+  const mult={1:'single',2:'duple',3:'triple',4:'quadruple'}[compound?top/3:top];
+  return{top,bot,compound,mult,beats:top*4/bot,
+    kind:mult?(compound?'Compound ':'Simple ')+mult:null};
+}
+const UNIT={2:'minim',4:'crotchet',8:'quaver'};
+function qTime(set){
+  const g=set.grade,ts=pick(tsPool(g)),info=tsInfo(ts),clef=pick(['treble','bass']);
+  if(g>=3&&info.kind&&Math.random()<0.5){
+    const all=['Simple duple','Simple triple','Simple quadruple','Compound duple','Compound triple','Compound quadruple'];
+    const opts=mkOpts(lab(info.kind),shuffle(all).map(lab));
+    const why=info.compound?'The top number is a multiple of 3 (and 6 or more) with quavers as the unit, so each beat is a dotted crotchet split into three. '+info.top/3+' main beats makes it '+info.mult+'.':'Each beat divides into two. '+info.top+' beats a bar makes it '+info.mult+'.';
+    return{topic:'time-sig',label:'Time signatures',html:'What type of time is <b>'+ts+'</b>?',sub:'',
+      staff:{clef,time:ts},opts,ans:info.kind,layout:'g4',
+      fb:'<p><b>'+ts+'</b> is <b>'+info.kind.toLowerCase()+'</b> time. '+why+'</p>',review:'Type of time '+ts};
+  }
+  let ask,unit,ans,fb;
+  if(info.compound&&Math.random()<0.5){
+    ans=info.top/3;unit='dotted crotchet';
+    fb='<p>In <b>'+ts+'</b> there are '+info.top+' quavers in a bar, grouped in threes. That gives <b>'+ans+' main beats</b>, each a dotted crotchet.</p>';
+  }else{
+    ans=info.top;unit=UNIT[info.bot];
+    fb='<p>In <b>'+ts+'</b> the top number ('+info.top+') is the number of beats in a bar. The bottom number ('+info.bot+') says the beat is a '+UNIT[info.bot]+'.</p>';
+  }
+  const nums=shuffle([1,2,3,4,5,6,7,9,12].filter(n=>n!==ans)).slice(0,3);
+  const opts=shuffle([ans].concat(nums)).map(n=>lab(String(n)));
+  return{topic:'time-sig',label:'Time signatures',html:'How many <b>'+unit+'</b> beats are in each bar?',sub:'',
+    staff:{clef,time:ts},opts,ans:String(ans),layout:'g4',fb,review:'Beats in '+ts};
+}
+
+// Which single note completes the bar?
+function qBar(set){
+  const g=set.grade,pool=VALUES.filter(v=>v.g<=g);
+  for(let t=0;t<60;t++){
+    const ts=pick(tsPool(g)),B=tsInfo(ts).beats;
+    let rem=B;const seq=[];
+    while(rem>0&&seq.length<7){
+      const c=pool.filter(v=>v.beats<=rem);
+      if(!c.length)break;
+      const v=pick(c);seq.push(v);rem-=v.beats;
+    }
+    if(rem!==0||seq.length<3||seq.length>6)continue;
+    const miss=seq.pop();
+    const pitches=['b/4','a/4','g/4','c/5','d/5'];
+    const notes=seq.map(v=>({key:pick(pitches),dur:v.dur,dots:v.dots}));
+    const others=shuffle(pool.filter(v=>v!==miss)).slice(0,3);
+    const opts=shuffle([miss].concat(others)).map(v=>({id:v.name,label:cap(v.name),sub:BEATLAB[v.beats]}));
+    const have=seq.reduce((s,v)=>s+v.beats,0);
+    return{topic:'bar',label:'Complete the bar',html:'Which single note completes this <b>'+ts+'</b> bar?',sub:'',
+      staff:{clef:'treble',time:ts,notes,W:430},opts,ans:miss.name,layout:'g4',
+      fb:'<p>A <b>'+ts+'</b> bar holds '+B+' crotchet beats. The notes shown add up to '+have+', so the missing note is worth '+(B-have)+': a <b>'+miss.name+'</b>.</p>',
+      review:'Complete a '+ts+' bar'};
+  }
+  return qNoteValue(set);
+}
+
+function qKeySig(set){
+  const g=set.grade,keys=keysFor(set);
+  if(Math.random()<0.6){
+    const q=(g>=3&&Math.random()<0.4&&keys.some(k=>k.q==='minor'))?'minor':'major';
+    const pool=keys.filter(k=>k.q===q),key=pick(pool),s=sigOf(key);
+    const fallback=(q==='major'?['C','G','F','D','B♭','A','E♭']:['A','E','D','B','G','C','F♯']).map(t=>({t,q}));
+    const cands=shuffle(pool.concat(fallback)).filter(k=>k.t!==key.t).map(k=>lab(k.t+' '+q));
+    const opts=mkOpts(lab(key.t+' '+q),cands);
+    const clef=pick(clefsFor(g));
+    const rel=q==='major'?s.sc[5]:s.sc[2];
+    return{
+      topic:'key-sig',label:'Key signatures',html:'Which <b>'+q+'</b> key has this key signature?',sub:'',
+      staff:{clef,key:vexKey(key)},opts,ans:key.t+' '+q,layout:'g4',
+      fb:'<p><b>'+keyName(key)+'</b> has '+sigLabel(s.n,s.sharp).toLowerCase()+(s.n?': '+sigList(s.n,s.sharp):'')+'.</p><p>Its relative '+(q==='major'?'minor':'major')+', '+nm(rel)+' '+(q==='major'?'minor':'major')+', shares this key signature.</p>',
+      review:'Key signature to '+q+' key'
+    };
+  }
+  const key=pick(keys),s=sigOf(key),cn=s.n===0?0:(s.sharp?1:-1)*s.n;
+  const maxN=Math.max(4,Math.min(7,s.n+1));
+  const all=[];
+  for(let n=0;n<=maxN;n++){all.push({n,sharp:true});if(n)all.push({n,sharp:false});}
+  const label=sigLabel(s.n,s.sharp);
+  const ds=all.filter(x=>sigLabel(x.n,x.sharp)!==label)
+    .map(x=>({x,r:Math.abs(x.n*(x.sharp?1:-1)-cn)+Math.random()*2.5})).sort((p,q)=>p.r-q.r).slice(0,3).map(o=>o.x);
+  const opts=shuffle([{n:s.n,sharp:s.sharp}].concat(ds)).map(x=>lab(sigLabel(x.n,x.sharp)));
+  const same=key.q==='major'?nm(s.sc[5])+' minor':nm(s.sc[2])+' major';
+  return{
+    topic:'key-sig',label:'Key signatures',html:'How many sharps or flats are in <b>'+keyName(key)+'</b>?',
+    sub:key.q==='minor'?'Count the key signature, not extra accidentals.':'',staff:null,opts,ans:label,layout:'g4',
+    fb:'<p><b>'+keyName(key)+'</b>: '+label.toLowerCase()+(s.n?' ('+sigList(s.n,s.sharp)+')':'')+'. Same key signature as '+same+'.</p>'+scaleRow(s.sc,-1),
+    review:'Sharps or flats in '+keyName(key)
+  };
+}
+
+const SIGNS=[
+  {id:'staccato',name:'Staccato',g:1,art:'a.',fb:'A dot above or below the note head. Play the note short and detached.'},
+  {id:'accent',name:'Accent',g:1,art:'a>',fb:'The accent mark (>). Play the note with emphasis.'},
+  {id:'pause',name:'Pause (fermata)',g:1,art:'a@a',fb:'A pause. Hold the note longer than its written value.'},
+  {id:'slur',name:'Slur',g:1,curve:'slur',fb:'A curved line over different notes. Play them smoothly, joined together (legato).'},
+  {id:'tie',name:'Tie',g:1,curve:'tie',fb:'A curved line joining two notes of the same pitch. Play one long note and add the values together.'},
+  {id:'tenuto',name:'Tenuto',g:3,art:'a-',fb:'A short line over or under the note. Hold the note for its full value.'},
+  {id:'marcato',name:'Marcato',g:4,art:'a^',fb:'A strong accent (^). Play the note marked and very emphasised.'}
+];
+function qSign(set){
+  const pool=SIGNS.filter(s=>s.g<=set.grade),s=pick(pool);
+  let staff;
+  if(s.curve==='slur')staff={clef:'treble',curve:'slur',notes:[{key:'e/5',dur:'q'},{key:'g/5',dur:'q'},{key:'f/5',dur:'q'}]};
+  else if(s.curve==='tie')staff={clef:'treble',curve:'tie',notes:[{key:'g/4',dur:'q'},{key:'g/4',dur:'q'}]};
+  else staff={clef:'treble',notes:[{key:'b/4',dur:'q',art:s.art}]};
+  const opts=mkOpts(lab(s.name),shuffle(pool.filter(x=>x!==s)).map(x=>lab(x.name)));
+  return{topic:'sign',label:'Signs on notes',html:'What is the sign on this '+(s.curve?'passage':'note')+'?',sub:'',
+    staff,opts,ans:s.name,layout:'g4',fb:'<p><b>'+s.name+'</b>. '+s.fb+'</p>',review:'Name the sign ('+s.name+')'};
+}
+
+// ---------- Scales, keys, intervals ----------
+function qDegNote(set){
+  const g=set.grade,{type,tonic,sc}=pickScale(set),d=rnd(7),target=sc[d];
+  const names=degNames(type),useName=!!names&&Math.random()<0.5;
+  const name=scName(tonic,type,g),dn=names?names[d]:null;
+  const base=(sc.some(n=>n.a<0)?FLAT12:SHARP12).slice();
+  base[pc(target)]=nm(target);
+  const opts=shuffle(base.map((l,i)=>({id:String(i),label:l})));
+  return{
+    topic:'deg-note',label:'Degree to note',
+    html:'What is the <b>'+(useName?dn:ORD[d])+'</b> of <b>'+name+'</b>?',sub:'',staff:null,
+    opts,ans:String(pc(target)),layout:'g12',
+    fb:'<p>The '+ORD[d]+' degree'+(dn?' ('+dn+')':'')+' of '+name+' is <b>'+nm(target)+'</b>.</p>'+scaleRow(sc,d),
+    review:'The '+(useName?dn:ORD[d])+' of '+name
+  };
+}
+function qNoteDeg(set){
+  const g=set.grade,{type,tonic,sc}=pickScale(set),d=rnd(7),note=nm(sc[d]);
+  const names=degNames(type),useName=!!names&&Math.random()<0.5;
+  const labs=useName?names:ORD,name=scName(tonic,type,g);
+  const opts=shuffle(labs.map((l,i)=>({id:String(i),label:cap(l)})));
+  return{
+    topic:'note-deg',label:'Note to degree',
+    html:'In <b>'+name+'</b>, '+(useName?'what is <b>'+note+'</b> called?':'which degree is <b>'+note+'</b>?'),
+    sub:'',staff:null,opts,ans:String(d),layout:'g7',
+    fb:'<p><b>'+note+'</b> is the '+ORD[d]+' degree'+(names?' ('+names[d]+')':'')+' of '+name+'.</p>'+scaleRow(sc,d),
+    review:note+' in '+name
+  };
+}
+
+// Which scale is shown on the staff (one octave, no key signature)
+function qScaleId(set){
+  const g=set.grade,types=['major','natural','harmonic','melodic'];
+  if(g>=6)types.push('dorian','mixolydian');
+  if(g>=7)types.push('lydian','phrygian');
+  const keys=keysFor(set);
+  for(let t=0;t<60;t++){
+    const key=pick(keys),type=pick(types),tonic=key.t,sc=scaleBy(tonic,type);
+    if(maxAcc(sc)>accLimit(g))continue;
+    const clef=pick(['treble','bass']),[lo,hi]=rangeFor(g,clef),l0=parseN(tonic).l;
+    const starts=[];
+    for(let o=0;o<8;o++){const d=o*7+l0;if(d>=lo&&d+7<=hi)starts.push(d);}
+    if(!starts.length)continue;
+    const d0=pick(starts);
+    const notes=sc.map((n,k)=>noteSpec(n,d0+k));
+    notes.push(noteSpec(sc[0],d0+7));
+    const label=scName(tonic,type,g);
+    const opts=mkOpts(lab(label),shuffle(types.filter(x=>x!==type)).map(x=>lab(scName(tonic,x,g))));
+    return{topic:'scale-id',label:'Scale identification',html:'Which scale is this?',
+      sub:cap(clef)+' clef, one octave ascending, written with accidentals',staff:{clef,notes,W:470},
+      opts,ans:label,layout:'g4',
+      fb:'<p>This is <b>'+label+'</b>.</p>'+scaleRow(sc,-1)+'<p class="hint">Compare the 3rd, 6th and 7th degrees: harmonic minor raises the 7th, ascending melodic minor raises the 6th and 7th.</p>',
+      review:'Identify the scale from '+tonic};
+  }
+  return qDegNote(set);
+}
+
+function qRelative(set){
+  const g=set.grade,keys=keysFor(set);
+  const parallelOk=k=>k.q==='major'?sigOf({t:k.t,q:'minor'}).n<=7:sigOf({t:k.t,q:'major'}).n<=7;
+  const key=pick(keys),parallel=Math.random()<0.3&&parallelOk(key);
+  const other=key.q==='major'?'minor':'major';
+  const s=sigOf(key);
+  if(parallel){
+    const ans=key.t+' '+other;
+    const rel=key.q==='major'?s.sc[5]:s.sc[2];
+    const pool=keys.filter(k=>k.q===other&&k.t!==key.t).map(k=>lab(k.t+' '+other));
+    const cands=[lab(nm(rel)+' '+other)].concat(shuffle(pool));
+    return{topic:'relative',label:'Relative and parallel keys',
+      html:'What is the <b>parallel '+other+'</b> of <b>'+keyName(key)+'</b>?',sub:'',staff:null,
+      opts:mkOpts(lab(ans),cands),ans,layout:'g4',
+      fb:'<p>A parallel key keeps the same tonic: <b>'+ans+'</b>. The relative '+other+' ('+nm(rel)+' '+other+') shares the key signature instead.</p>',
+      review:'Parallel '+other+' of '+keyName(key)};
+  }
+  const rel=key.q==='major'?s.sc[5]:s.sc[2],ans=nm(rel)+' '+other;
+  const all=(other==='major'?KEYADD:KEYADD);
+  const fallback=[];
+  for(let i=1;i<=7;i++)(other==='major'?KEYADD[i].M:KEYADD[i].m).forEach(t=>fallback.push(lab(t+' '+other)));
+  const cands=[lab(key.t+' '+other)].concat(shuffle(fallback));
+  return{topic:'relative',label:'Relative and parallel keys',
+    html:'What is the <b>relative '+other+'</b> of <b>'+keyName(key)+'</b>?',sub:'',staff:null,
+    opts:mkOpts(lab(ans),cands),ans,layout:'g4',
+    fb:'<p>The relative '+other+' of '+keyName(key)+' is <b>'+ans+'</b>. They share the key signature ('+sigLabel(s.n,s.sharp).toLowerCase()+').</p>'+scaleRow(s.sc,-1),
+    review:'Relative '+other+' of '+keyName(key)};
+}
+
+function qEnharmonic(set){
+  const pcs=[];
+  for(let p=0;p<12;p++){
+    const s=SHARP12[p],f=FLAT12[p];
+    if(s!==f){pcs.push([s,f]);pcs.push([f,s]);}
+  }
+  pcs.push(['E♯','F'],['F','E♯'],['B♯','C'],['C','B♯'],['C♭','B'],['B','C♭'],['F♭','E'],['E','F♭']);
+  const [from,to]=pick(pcs),tp=parseN(to),p0=pc(parseN(to));
+  const cands=[];
+  for(const dl of[-2,-1,1,2])for(const a of[-1,0,1])cands.push({l:mod(tp.l+dl,7),a});
+  cands.push({l:tp.l,a:tp.a+1},{l:tp.l,a:tp.a-1});
+  const good=shuffle(cands).filter(n=>Math.abs(n.a)<=1&&pc(n)!==p0).map(n=>lab(nm(n)));
+  return{topic:'enharmonic',label:'Enharmonic notes',
+    html:'Which note sounds the same as <b>'+from+'</b> but is spelled differently?',sub:'',staff:null,
+    opts:mkOpts(lab(to),good),ans:to,layout:'g4',
+    fb:'<p><b>'+from+'</b> and <b>'+to+'</b> are enharmonic equivalents: same pitch, different name.</p>',
+    review:'Enharmonic of '+from};
+}
+
+// ----- Intervals -----
+const BASE=[0,2,4,5,7,9,11,12];
+const PERFECT=[1,4,5,8];
+const ORDN=['unison','2nd','3rd','4th','5th','6th','7th','octave'];
+function semis(n,q){
+  const b=BASE[n-1];
+  return PERFECT.includes(n)?b+({perfect:0,augmented:1,diminished:-1})[q]:b+({major:0,minor:-1,augmented:1,diminished:-2})[q];
+}
+function qualsFor(n,g){
+  const p=PERFECT.includes(n);
+  if(g<=2)return p?['perfect']:['major'];
+  if(g<=4)return p?['perfect']:['major','minor'];
+  return p?['perfect','augmented','diminished']:['major','minor','augmented','diminished'];
+}
+const ivLabel=(n,q,g)=>g<=2?(n===8?'Octave':ORDN[n-1]):cap(q)+' '+ORDN[n-1];
+function lowerPool(set){
+  const g=set.grade;
+  if(g<=5)return[...new Set(keysFor(set).map(k=>k.t))].map(parseN);
+  const out=[];
+  for(let l=0;l<7;l++)for(const a of[-1,0,1])out.push({l,a});
+  return out;
+}
+function genInterval(set){
+  const g=set.grade;
+  for(let t=0;t<80;t++){
+    const lo=pick(lowerPool(set)),n=2+rnd(7),qs=qualsFor(n,g);
+    const basic=qs.filter(x=>x==='perfect'||x==='major'||x==='minor');
+    const q=(g>=5&&Math.random()<0.65)?pick(basic):pick(qs);
+    const l2=(lo.l+n-1)%7,a2=mod(pc(lo)+semis(n,q)-NAT[l2]+6,12)-6;
+    if(Math.abs(a2)>accLimit(g)||Math.abs(lo.a)>accLimit(g))continue;
+    return{lo,up:{l:l2,a:a2},n,q};
+  }
+  return{lo:{l:0,a:0},up:{l:4,a:0},n:5,q:'perfect'};
+}
+function ivOptions(iv,g){
+  const all=[];
+  for(let n=2;n<=8;n++)for(const q of qualsFor(n,g))all.push({n,q});
+  const cands=all.filter(x=>!(x.n===iv.n&&x.q===iv.q))
+    .map(x=>({x,r:Math.abs(x.n-iv.n)*1.2+(x.q===iv.q?0:0.5)+Math.random()*0.9}))
+    .sort((a,b)=>a.r-b.r).map(o=>lab(ivLabel(o.x.n,o.x.q,g)));
+  return mkOpts(lab(ivLabel(iv.n,iv.q,g)),cands);
+}
+function ivExplain(iv,g){
+  const letters=[];for(let i=0;i<iv.n;i++)letters.push(L[(iv.lo.l+i)%7]);
+  const s=semis(iv.n,iv.q);
+  let t='<p>From <b>'+nm(iv.lo)+'</b> up to <b>'+nm(iv.up)+'</b>: count the letter names ('+letters.join(' ')+') to get the number, a <b>'+(iv.n===8?'octave':ORDN[iv.n-1])+'</b>.';
+  if(g>=3)t+=' It spans '+s+' semitones, which makes it <b>'+iv.q+'</b>.';
+  return t+'</p>';
+}
+function qIntName(set){
+  const g=set.grade,iv=genInterval(set),ans=ivLabel(iv.n,iv.q,g);
+  const opts=ivOptions(iv,g);
+  const base={topic:'int-name',label:'Interval names',opts,ans,layout:'g4',fb:ivExplain(iv,g),
+    review:'Interval '+nm(iv.lo)+' to '+nm(iv.up)};
+  if(Math.random()<0.3)return{...base,html:'What is the interval from <b>'+nm(iv.lo)+'</b> up to <b>'+nm(iv.up)+'</b>?',sub:g<=2?'Give the number only.':'',staff:null};
+  const clef=pick(['treble','bass']),[lo,hi]=rangeFor(g,clef),ds=[];
+  for(let o=0;o<8;o++){const d=o*7+iv.lo.l;if(d>=lo&&d+iv.n-1<=hi)ds.push(d);}
+  if(!ds.length)return{...base,html:'What is the interval from <b>'+nm(iv.lo)+'</b> up to <b>'+nm(iv.up)+'</b>?',sub:'',staff:null};
+  const d0=pick(ds);
+  return{...base,html:'Name this interval.',sub:g<=2?'Give the number only. '+cap(clef)+' clef.':cap(clef)+' clef',
+    staff:{clef,notes:[noteSpec(iv.lo,d0),noteSpec(iv.up,d0+iv.n-1)]}};
+}
+function qIntNote(set){
+  const g=set.grade,iv=genInterval(set),ans=nm(iv.up),u=iv.up;
+  const cands=[];
+  for(const dl of[-1,1,-2,2])cands.push({l:mod(u.l+dl,7),a:u.a});
+  cands.push({l:u.l,a:u.a+1},{l:u.l,a:u.a-1},{l:u.l,a:0});
+  const good=shuffle(cands).filter(n=>Math.abs(n.a)<=accLimit(g)).map(n=>lab(nm(n)));
+  return{topic:'int-note',label:'Interval to note',
+    html:'Which note is a <b>'+ivLabel(iv.n,iv.q,g).toLowerCase()+' above '+nm(iv.lo)+'</b>?',sub:'',staff:null,
+    opts:mkOpts(lab(ans),good),ans,layout:'g4',fb:ivExplain(iv,g),
+    review:ivLabel(iv.n,iv.q,g)+' above '+nm(iv.lo)};
+}
+
+// ---------- Chords and harmony ----------
+function qChord(set,kind){
+  const g=set.grade,{key,type,sc}=pickChordKey(set),keys=keysFor(set);
+  const d=rnd(7),c=chordAt(sc,d),label=x=>kind==='notes'?chordStr(x):chordLabel(x);
+  const kn=keyName(key);
+  const fbBase='<p>Chord '+roman(d,c.q)+' ('+ORD[d]+') of <b>'+kn+'</b> is <b>'+chordLabel(c)+'</b>: '+chordStr(c).replace(/ /g,' ')+'.</p>'+chordRow(sc,d)+'<p class="hint">Each chord stacks the 1st, 3rd and 5th notes counted from its own degree of the scale.</p>';
+  const sub=minorNote(key,type);
+  if(kind==='deg'){
+    const opts=shuffle(ROM.map((_,i)=>({id:String(i),label:roman(i,chordAt(sc,i).q),sub:ORD[i]})));
+    return{topic:'chord-deg',label:'Chord number',
+      html:'<b>'+chordStr(c).replace(/ /g,' · ')+'</b> is which chord of <b>'+kn+'</b>?',sub,staff:null,
+      opts,ans:String(d),layout:'g7',fb:fbBase,review:chordStr(c).replace(/ /g,' ')+' in '+kn};
+  }
+  const cs=[wrongQuality(c)];
+  const other=pick(keys.filter(k=>keyName(k)!==kn));
+  if(other){const o=scaleBy(other.t,other.q==='major'?'major':(g>=3?'harmonic':'natural'));cs.push(chordAt(o,d));}
+  const diat=shuffle(sc.map((_,i)=>chordAt(sc,i)).filter((_,i)=>i!==d));
+  const order=shuffle(cs.slice(0,1).concat(diat.slice(0,2))).concat(cs.slice(1)).concat(diat);
+  const ok=order.filter(x=>x.notes.every(n=>Math.abs(n.a)<=accLimit(g)));
+  const opts=mkOpts({id:label(c),label:label(c)},ok.map(x=>({id:label(x),label:label(x)})));
+  const nth='<b>'+ORD[d]+' chord</b> of <b>'+kn+'</b>';
+  return{
+    topic:kind==='notes'?'chord-notes':'chord-name',label:kind==='notes'?'Chord notes':'Chord names',
+    html:kind==='notes'?'What are the notes of the '+nth+'?':'Which chord is the '+nth+'?',sub,staff:null,
+    opts,ans:label(c),layout:'g4',fb:fbBase,review:'The '+ORD[d]+' chord of '+kn
+  };
+}
+
+// Triad on the staff, with inversions from Grade 5
+const INV=['root position','1st inversion','2nd inversion'];
+function triadSpec(c,clef,g,inv){
+  const [lo,hi]=clef==='treble'?[27,31]:[15,19],l0=c.root.l,roots=[];
+  for(let o=0;o<8;o++){const d=o*7+l0;if(d>=lo&&d<=hi)roots.push(d);}
+  const r=roots.length?pick(roots):lo;
+  const [n0,n1,n2]=c.notes;
+  const lay=[[[n0,r],[n1,r+2],[n2,r+4]],[[n1,r+2],[n2,r+4],[n0,r+7]],[[n2,r+4],[n0,r+7],[n1,r+9]]][inv];
+  return{clef,chord:lay.map(([n,d])=>({key:diaKey(d),acc:accV(n.a)}))};
+}
+function qChordStaff(set){
+  const g=set.grade,{key,sc}=pickChordKey(set),clef=pick(['treble','bass']);
+  const d=rnd(7),c=chordAt(sc,d),inv=g>=5?rnd(3):0;
+  const lbl=(x,i)=>g>=5?chordLabel(x)+', '+INV[i]:chordLabel(x);
+  const ans=lbl(c,inv),cands=[];
+  if(g>=5)for(let i=0;i<3;i++)if(i!==inv)cands.push(lab(lbl(c,i)));
+  const wq=wrongQuality(c);
+  if(wq.notes.every(n=>Math.abs(n.a)<=accLimit(g)))cands.push(lab(lbl(wq,inv)));
+  shuffle(sc.map((_,i)=>chordAt(sc,i)).filter((_,i)=>i!==d)).forEach(x=>cands.push(lab(lbl(x,inv))));
+  const opts=mkOpts(lab(ans),shuffle(cands.slice(0,Math.max(0,cands.length-5))).concat(cands.slice(-5)));
+  const bass=c.notes[inv];
+  return{topic:'chord-staff',label:'Triads on the staff',html:'Name this triad.',
+    sub:cap(clef)+' clef'+(g>=5?'. Give the inversion too.':''),staff:triadSpec(c,clef,g,inv),
+    opts,ans,layout:'g4',
+    fb:'<p>The notes are '+chordStr(c).replace(/ /g,' ')+': <b>'+chordLabel(c)+'</b>'+(g>=5?', in <b>'+INV[inv]+'</b> (lowest note '+nm(bass)+')':'')+'.</p><p class="hint">Re-stack the notes in thirds to find the root. A major triad has a major 3rd, a minor triad a minor 3rd, diminished has a diminished 5th.</p>',
+    review:'Name the triad ('+chordLabel(c)+')'};
+}
+
+// Seventh chords: V7 at Grade 6, more degrees later
+const SEVN={'4,7,10':'dominant seventh','4,7,11':'major seventh','3,7,10':'minor seventh','3,6,10':'half-diminished seventh','3,6,9':'diminished seventh','3,7,11':'minor-major seventh','4,8,10':'augmented seventh'};
+function sevChord(sc,d){return[sc[d],sc[(d+2)%7],sc[(d+4)%7],sc[(d+6)%7]];}
+function sevName(ns){return SEVN[[1,2,3].map(i=>mod(pc(ns[i])-pc(ns[0]),12)).join(',')]||'seventh chord';}
+function qSeventh(set){
+  const g=set.grade,{key,type,sc}=pickChordKey(set),pool=g<=6?[4]:g===7?[1,4,6]:[0,1,2,3,4,5,6];
+  const d=pick(pool),ns=sevChord(sc,d),tri=chordAt(sc,d);
+  const rn=roman(d,tri.q)+'7',kn=keyName(key);
+  const str=x=>x.map(nm).join(' ');
+  const cands=[],[r,t,f,s]=ns;
+  cands.push([r,t,f,alter(s,1)],[r,t,f,alter(s,-1)],[r,alter(t,-1),f,s],[r,alter(t,1),f,s],[r,t,alter(f,-1),s]);
+  const o=pick(keysFor(set).filter(k=>keyName(k)!==kn));
+  if(o){const sc2=scaleBy(o.t,o.q==='major'?'major':(g>=3?'harmonic':'natural'));cands.push(sevChord(sc2,d));}
+  cands.push(sevChord(sc,(d+3)%7));
+  const ok=shuffle(cands).filter(x=>x.every(n=>Math.abs(n.a)<=accLimit(g)));
+  const opts=mkOpts(lab(str(ns)),ok.map(x=>lab(str(x))));
+  const nameTxt=sevName(ns);
+  return{topic:'seventh',label:'Seventh chords',
+    html:'What are the notes of chord <b>'+rn+'</b> in <b>'+kn+'</b>?',
+    sub:(d===4?'V7 is the dominant seventh. ':'')+minorNote(key,type),staff:null,opts,ans:str(ns),layout:'g4',
+    fb:'<p><b>'+rn+'</b> in '+kn+' is <b>'+ns.map(nm).join(' ')+'</b>, a '+nameTxt+' chord: the triad on degree '+(d+1)+' plus the note a 7th above the root.</p>'+scaleRow(sc,d),
+    review:rn+' in '+kn};
+}
+
+// Cadences from Grade 4
+const CADN={perfect:'Perfect',plagal:'Plagal',imperfect:'Imperfect',interrupted:'Interrupted'};
+function qCadence(set){
+  const g=set.grade,{key,type,sc}=pickChordKey(set),kn=keyName(key);
+  const pre=pick([0,1,3]);
+  const prog={perfect:[4,0],plagal:[3,0],imperfect:[pre,4],interrupted:[4,5]};
+  const show=p=>p.map(d=>{const c=chordAt(sc,d);return g>=5?chordLabel(c):roman(d,c.q);}).join(' → ');
+  const kind=pick(Object.keys(prog));
+  const info='<ul class="tight"><li><b>Perfect</b>: V → I</li><li><b>Plagal</b>: IV → I</li><li><b>Imperfect</b>: ends on V (I, II or IV → V)</li><li><b>Interrupted</b>: V → VI</li></ul>';
+  if(Math.random()<0.5){
+    const opts=shuffle(Object.keys(CADN).map(k=>({id:k,label:CADN[k]})));
+    return{topic:'cadence',label:'Cadences',
+      html:'In <b>'+kn+'</b>, the chords <b>'+show(prog[kind])+'</b> make which cadence?',sub:minorNote(key,type),staff:null,
+      opts,ans:kind,layout:'g4',fb:'<p>That is a <b>'+kind+' cadence</b>.</p>'+info,review:show(prog[kind])+' in '+kn};
+  }
+  const opts=shuffle(Object.keys(prog).map(k=>({id:k,label:show(prog[k])})));
+  return{topic:'cadence',label:'Cadences',
+    html:'Which chords make a <b>'+kind+' cadence</b> in <b>'+kn+'</b>?',sub:minorNote(key,type),staff:null,
+    opts,ans:kind,layout:'g4',fb:'<p>A <b>'+kind+' cadence</b> in '+kn+' is <b>'+show(prog[kind])+'</b>.</p>'+info,review:cap(kind)+' cadence in '+kn};
+}
+
+// ---------- Terms and signs ----------
+// [term, meaning, category, grade]
+const TERMS=[
+['piano (p)','soft','dyn',1],['forte (f)','loud','dyn',1],['crescendo (cresc.)','gradually getting louder','dyn',1],['diminuendo (dim.)','gradually getting softer','dyn',1],
+['mezzo piano (mp)','moderately soft','dyn',2],['mezzo forte (mf)','moderately loud','dyn',2],
+['pianissimo (pp)','very soft','dyn',3],['fortissimo (ff)','very loud','dyn',3],['sforzando (sf)','a sudden strong accent','dyn',4],
+['fortepiano (fp)','loud, then immediately soft','dyn',5],['pianississimo (ppp)','extremely soft','dyn',5],['fortississimo (fff)','extremely loud','dyn',5],
+['rinforzando (rf)','reinforced, with sudden emphasis','dyn',6],['morendo','dying away','dyn',6],['calando','getting softer and slower','dyn',6],['perdendosi','fading away','dyn',7],
+['Allegro','fast and lively','tempo',1],['Andante','at a walking pace','tempo',1],['Moderato','at a moderate speed','tempo',2],['Adagio','slowly, at ease','tempo',2],
+['Presto','very fast','tempo',3],['Lento','slow','tempo',3],['Largo','very slow and broad','tempo',3],['Allegretto','fairly fast, a little slower than Allegro','tempo',3],['Vivace','lively and fast','tempo',3],
+['Grave','very slow and solemn','tempo',5],['Larghetto','fairly slow, a little faster than Largo','tempo',5],['Prestissimo','as fast as possible','tempo',6],['Allegro ma non troppo','fast, but not too fast','tempo',6],['Tempo giusto','in strict time','tempo',7],
+['rallentando (rall.) / ritardando (rit.)','gradually getting slower','change',2],['a tempo','return to the original speed','change',2],['accelerando (accel.)','gradually getting faster','change',3],
+['ritenuto (riten.)','immediately slower, held back','change',4],['tempo primo','return to the first speed','change',4],['stringendo','pressing forward, getting faster','change',5],
+['rubato','with some freedom in the speed','change',5],['meno mosso','less movement, slower','change',5],['più mosso','more movement, faster','change',5],
+['allargando','broadening, getting slower and fuller','change',6],['ad libitum (ad lib.)','at the performer’s discretion','change',6],['l’istesso tempo','at the same speed','change',8],
+['molto','much, very much','mod',3],['poco','a little','mod',3],['poco a poco','little by little','mod',4],['sempre','always','mod',4],['più','more','mod',4],['meno','less','mod',4],['con','with','mod',4],
+['senza','without','mod',5],['assai','very','mod',5],['non troppo','not too much','mod',5],['subito','suddenly, immediately','mod',5],['ma','but','mod',5],['quasi','almost, as if','mod',7],
+['dolce','sweetly','expr',2],['cantabile','in a singing style','expr',3],['espressivo (espress.)','expressively','expr',3],['maestoso','majestically','expr',4],['grazioso','gracefully','expr',4],
+['tranquillo','calmly','expr',4],['animato','lively, animated','expr',4],['giocoso','merrily, jokingly','expr',5],['scherzando','playfully','expr',5],['sostenuto','sustained','expr',5],
+['leggiero','lightly','expr',5],['agitato','agitated','expr',5],['con moto','with movement','expr',5],['con brio','with vigour','expr',5],['pesante','heavily','expr',6],
+['appassionato','passionately','expr',6],['energico','energetically','expr',6],['risoluto','resolutely, boldly','expr',6],['semplice','simply','expr',6],['misterioso','mysteriously','expr',6],
+['con amore','with love','expr',6],['con fuoco','with fire','expr',6],['con forza','with force','expr',6],['dolente','sorrowfully','expr',7],['lamentoso','mournfully','expr',7],
+['con spirito','with spirit','expr',7],['sotto voce','in an undertone, very quietly','expr',7],['alla marcia','in the style of a march','expr',7],['dolcissimo','very sweetly','expr',8],
+['legato','smoothly connected','artic',1],['staccato','short and detached','artic',1],['tenuto (ten.)','held for its full value','artic',3],['marcato','marked, emphasised','artic',4],
+['pizzicato (pizz.)','plucked','artic',5],['portato','between legato and staccato','artic',6],['staccatissimo','very short and detached','artic',6],['arco','with the bow','artic',6],
+['glissando (gliss.)','sliding between notes','artic',6],['con sordino','with the mute','artic',7],['tremolo','rapid repetition of a note, trembling','artic',7],
+['divisi (div.)','divided between players','artic',8],['una corda','soft pedal (one string)','artic',8],['martellato','hammered, strongly accented','artic',8],
+['da capo (D.C.)','repeat from the beginning','struct',3],['fine','the end','struct',3],['dal segno (D.S.)','repeat from the sign','struct',4],['segno','the sign','struct',4],
+['D.C. al fine','repeat from the beginning to “fine”','struct',4],['solo','alone, by one performer','struct',4],['coda','a closing section','struct',5],['ottava (8va)','an octave higher','struct',5],
+['tutti','all together','struct',6],['attacca','go on immediately to the next section','struct',7],['simile (sim.)','in the same way','struct',7],
+['volti subito (V.S.)','turn the page quickly','struct',8],['loco','at normal pitch (after 8va)','struct',8],['alla breve','two minim beats in a bar','struct',8]
+];
+function qTerm(set){
+  const avail=TERMS.filter(t=>t[3]<=set.grade),t=pick(avail),toMeaning=Math.random()<0.55;
+  const same=shuffle(avail.filter(x=>x!==t&&x[2]===t[2])),rest=shuffle(avail.filter(x=>x!==t&&x[2]!==t[2]));
+  const near=same.concat(rest),i=toMeaning?1:0;
+  const opts=mkOpts({id:t[i],label:t[i]},near.map(x=>({id:x[i],label:x[i]})));
+  return{topic:'term',label:'Terms and signs',txt:true,
+    html:toMeaning?'What does <b>'+t[0]+'</b> mean?':'Which term means <b>'+t[1]+'</b>?',sub:'',staff:null,
+    opts,ans:t[i],layout:'g1',fb:'<p><b>'+t[0]+'</b> means <b>'+t[1]+'</b>.</p>',review:toMeaning?t[0]:t[1]};
+}
+
+// ---------- Basics (no notation) ----------
+const BTONICS=['C','C♯','D♭','D','D♯','E♭','E','F','F♯','G♭','G','G♯','A♭','A','A♯','B♭','B'];
+const BTYPES=[{id:'major',l:'Major'},{id:'natural',l:'Natural minor'},{id:'harmonic',l:'Harmonic minor'},{id:'melodic',l:'Melodic minor',s:'ascending'},
+  {id:'dorian',l:'Dorian'},{id:'mixolydian',l:'Mixolydian'},{id:'lydian',l:'Lydian'},{id:'phrygian',l:'Phrygian'},{id:'locrian',l:'Locrian'}];
+const bName=(t,ty)=>t+' '+({major:'major',natural:'minor',harmonic:'harmonic minor',melodic:'melodic minor'}[ty]||cap(ty));
+const bSub=ty=>({natural:'Natural minor scale.',melodic:'Ascending melodic minor.'}[ty]||'');
+function bValid(set){
+  const b=set.bscale||{},ts=b.tonics&&b.tonics.length?b.tonics:BTONICS,ty=b.types&&b.types.length?b.types:['major'],out=[];
+  ts.forEach(t=>ty.forEach(type=>{const sc=scaleBy(t,type);if(maxAcc(sc)<=1)out.push({tonic:t,type,sc});}));
+  return out;
+}
+const bScale=set=>{const v=bValid(set);return v.length?pick(v):{tonic:'C',type:'major',sc:scaleBy('C','major')};};
+
+const tk=a=>[...new Set(a)].sort((x,y)=>x-y).join(',');
+const CT={};
+[['major','major','',[0,4,7],'root, major 3rd, perfect 5th'],
+ ['minor','minor','m',[0,3,7],'root, minor 3rd, perfect 5th'],
+ ['dim','diminished','dim',[0,3,6],'root, minor 3rd, diminished 5th'],
+ ['aug','augmented','aug',[0,4,8],'root, major 3rd, augmented 5th'],
+ ['6','major 6th','6',[0,4,7,9],'major triad + major 6th',1],
+ ['m6','minor 6th','m6',[0,3,7,9],'minor triad + major 6th',1],
+ ['7','dominant 7th','7',[0,4,7,10],'major triad + minor 7th'],
+ ['maj7','major 7th','maj7',[0,4,7,11],'major triad + major 7th'],
+ ['m7','minor 7th','m7',[0,3,7,10],'minor triad + minor 7th'],
+ ['m7b5','half-diminished 7th','m7♭5',[0,3,6,10],'diminished triad + minor 7th'],
+ ['dim7','diminished 7th','dim7',[0,3,6,9],'diminished triad + diminished 7th'],
+ ['mMaj7','minor-major 7th','m(maj7)',[0,3,7,11],'minor triad + major 7th'],
+ ['maj7s5','augmented major 7th','maj7♯5',[0,4,8,11],'augmented triad + major 7th'],
+ ['9','dominant 9th','9',[0,4,7,10,14],'dominant 7th + major 9th'],
+ ['maj9','major 9th','maj9',[0,4,7,11,14],'major 7th + major 9th'],
+ ['m9','minor 9th','m9',[0,3,7,10,14],'minor 7th + major 9th'],
+ ['mMaj9','minor-major 9th','m(maj9)',[0,3,7,11,14],'minor-major 7th + major 9th'],
+ ['m7b9','minor 7th ♭9','m7♭9',[0,3,7,10,13],'minor 7th + minor 9th'],
+ ['m7b5b9','half-diminished ♭9','m7♭5♭9',[0,3,6,10,13],'half-diminished 7th + minor 9th']
+].forEach(([id,n,s,iv,f,six])=>{
+  const st=six?[0,2,4,5]:[0,2,4,6,8].slice(0,iv.length);
+  CT[id]={id,n,s,iv,f,six:!!six,st,key:tk(iv.map(x=>mod(x,12)))};
+});
+const STLAB={0:'R',2:'3',4:'5',5:'6',6:'7',8:'9'};
+function spell(root,id){
+  const t=CT[id],rp=pc(root);
+  return t.iv.map((s,i)=>{const l=(root.l+t.st[i])%7;return{l,a:mod(rp+s-NAT[l]+6,12)-6};});
+}
+const relKey=(ns,r)=>tk(ns.map(n=>mod(pc(n)-pc(r),12)));
+function typeOf(ns){return Object.keys(CT).find(k=>!CT[k].six&&CT[k].iv.length===ns.length&&CT[k].key===relKey(ns,ns[0]));}
+function bStack(sc,d,size){
+  for(let sz=size;sz>=3;sz--){
+    const ns=[];for(let k=0;k<sz;k++)ns.push(sc[(d+2*k)%7]);
+    const tid=typeOf(ns);if(tid)return{notes:ns,tid,size:sz};
+  }
+  return{notes:[sc[d],sc[(d+2)%7],sc[(d+4)%7]],tid:'major',size:3};
+}
+const bChordName=c=>nm(c.notes[0])+' '+CT[c.tid].n;
+const bShort=c=>nm(c.notes[0])+CT[c.tid].s;
+const sizesFor=set=>{const e=set.ext||{};return [3].concat(e.s7?[4]:[],e.n9?[5]:[]);};
+const chordRowB=(sc,size,hi)=>'<div class="chips">'+sc.map((_,i)=>'<span class="c'+(i===hi?' hi':'')+'"><small>'+ORD[i]+'</small>'+bShort(bStack(sc,i,size))+'</span>').join('')+'</div>';
+const ordOpts=()=>shuffle(ORD.map((o,i)=>({id:String(i),label:cap(o)})));
+
+function qBDegNote(set){
+  const {tonic,type,sc}=bScale(set),d=1+rnd(6),t=sc[d],name=bName(tonic,type);
+  const base=(sc.some(n=>n.a<0)?FLAT12:SHARP12).slice();base[pc(t)]=nm(t);
+  return{topic:'b-deg-note',label:'Degree to note',html:'What is the <b>'+ORD[d]+'</b> of <b>'+name+'</b>?',sub:bSub(type),staff:null,
+    opts:shuffle(base.map((l,i)=>({id:String(i),label:l}))),ans:String(pc(t)),layout:'g12',
+    fb:'<p>The '+ORD[d]+' degree of '+name+' is <b>'+nm(t)+'</b>.</p>'+scaleRow(sc,d),review:'The '+ORD[d]+' of '+name};
+}
+function qBNoteDeg(set){
+  const {tonic,type,sc}=bScale(set),d=1+rnd(6),note=nm(sc[d]),name=bName(tonic,type);
+  return{topic:'b-note-deg',label:'Note to degree',html:'In <b>'+name+'</b>, which degree is <b>'+note+'</b>?',sub:bSub(type),staff:null,
+    opts:ordOpts(),ans:String(d),layout:'g7',
+    fb:'<p><b>'+note+'</b> is the '+ORD[d]+' degree of '+name+'.</p>'+scaleRow(sc,d),review:note+' in '+name};
+}
+function qBChordOf(set){
+  const {tonic,type,sc}=bScale(set),d=rnd(7),c=bStack(sc,d,pick(sizesFor(set))),ans=bChordName(c),name=bName(tonic,type);
+  const same=shuffle(Object.keys(CT).filter(k=>!CT[k].six&&CT[k].iv.length===c.size&&k!==c.tid)).slice(0,1).map(k=>lab(nm(c.notes[0])+' '+CT[k].n));
+  const others=shuffle([0,1,2,3,4,5,6].filter(i=>i!==d)).map(i=>lab(bChordName(bStack(sc,i,c.size))));
+  return{topic:'b-chord-of',label:'Chord of a degree',html:'Which chord is the <b>'+ORD[d]+' chord</b> of <b>'+name+'</b>?',sub:bSub(type),staff:null,
+    opts:mkOpts(lab(ans),same.concat(others)),ans,layout:'g4',
+    fb:'<p>The '+ORD[d]+' chord of '+name+' is <b>'+ans+'</b>: '+c.notes.map(nm).join(' ')+'.</p>'+chordRowB(sc,c.size,d)+'<p class="hint">Stack notes a third apart, starting on the chosen degree: '+(c.size>3?'1st, 3rd, 5th, 7th'+(c.size>4?', 9th':''):'1st, 3rd, 5th')+'.</p>',
+    review:'The '+ORD[d]+' chord of '+name};
+}
+function qBChordDeg(set){
+  const {tonic,type,sc}=bScale(set),d=rnd(7),c=bStack(sc,d,pick(sizesFor(set))),name=bName(tonic,type);
+  return{topic:'b-chord-deg',label:'Chord to degree',html:'Which chord of <b>'+name+'</b> is <b>'+c.notes.map(nm).join(' · ')+'</b>?',sub:bSub(type),staff:null,
+    opts:ordOpts(),ans:String(d),layout:'g7',
+    fb:'<p>'+c.notes.map(nm).join(' ')+' is <b>'+bChordName(c)+'</b>, the <b>'+ORD[d]+'</b> chord of '+name+'.</p>'+chordRowB(sc,c.size,d),
+    review:c.notes.map(nm).join(' ')+' in '+name};
+}
+function qBSemis(set){
+  const arr=Math.random()<0.5?FLAT12:SHARP12,a=rnd(12),b=(a+1+rnd(11))%12,ans=mod(b-a,12);
+  const cands=[12-ans,ans-1,ans+1,ans+2,ans-2,ans+3].filter(x=>x>=1&&x<=11).map(x=>({id:String(x),label:String(x),sub:'semitones'}));
+  const path=[];for(let i=0;i<=ans;i++)path.push('<span class="c'+(i===ans?' hi':'')+'"><small>'+i+'</small>'+arr[(a+i)%12]+'</span>');
+  return{topic:'b-semis',label:'Semitone gap',html:'How many semitones from <b>'+arr[a]+'</b> up to <b>'+arr[b]+'</b>?',sub:'Count every key, white and black.',staff:null,
+    opts:mkOpts({id:String(ans),label:String(ans),sub:'semitones'},cands),ans:String(ans),layout:'g4',
+    fb:'<p>From '+arr[a]+' up to '+arr[b]+' is <b>'+ans+' semitones</b>. Going down instead it is '+(12-ans)+'.</p><div class="chips">'+path.join('')+'</div>',
+    review:arr[a]+' up to '+arr[b]};
+}
+
+function bPool(set){
+  const e=set.ext||{},ids=['major','minor','dim','aug'];
+  if(e.s7)ids.push('6','m6','7','maj7','m7','m7b5','dim7','mMaj7');
+  if(e.n9)ids.push('9','maj9','m9','mMaj9');
+  return ids;
+}
+function bRandChord(set){
+  const ids=bPool(set);
+  for(let i=0;i<80;i++){
+    const root=parseN(pick(BTONICS)),id=pick(ids),notes=spell(root,id);
+    if(notes.every(n=>Math.abs(n.a)<=1))return{root,id,notes};
+  }
+  const root=parseN('C');return{root,id:'major',notes:spell(root,'major')};
+}
+const chipsOf=(ns,id)=>'<div class="chips">'+ns.map((n,i)=>'<span class="c"><small>'+STLAB[CT[id].st[i]]+'</small>'+nm(n)+'</span>').join('')+'</div>';
+
+// Jumbled notes: select every chord name that fits (can be more than one)
+function qBChordId(set){
+  const c=bRandChord(set),pool=bPool(set),hits=[];
+  c.notes.forEach(r=>pool.forEach(id=>{if(relKey(c.notes,r)===CT[id].key)hits.push({root:r,id});}));
+  const nameOf=h=>nm(h.root)+' '+CT[h.id].n,ans=[...new Set(hits.map(nameOf))];
+  const wrong=[];c.notes.forEach(r=>pool.forEach(id=>{const l=nm(r)+' '+CT[id].n;if(!ans.includes(l))wrong.push(l);}));
+  const cpcs=tk(c.notes.map(pc));
+  const outs=BTONICS.filter(r=>!c.notes.some(n=>nm(n)===r)).filter(r=>tk(spell(parseN(r),c.id).map(pc))!==cpcs).map(r=>r+' '+CT[c.id].n);
+  const dist=shuffle(wrong.concat(outs)).slice(0,Math.max(3,8-ans.length));
+  let sh=shuffle(c.notes);for(let i=0;i<8&&sh.every((n,k)=>n===c.notes[k]);i++)sh=shuffle(c.notes);
+  const lines=hits.map(h=>'<li><b>'+nameOf(h)+'</b>: '+spell(h.root,h.id).map(nm).join(' ')+'</li>').join('');
+  return{topic:'b-chord-id',label:'Name the jumbled chord',multi:true,html:'Which chord names fit <b>'+sh.map(nm).join(' · ')+'</b>?',
+    sub:'The notes are jumbled. Select every name that fits, there can be more than one.',staff:null,
+    opts:shuffle(ans.concat(dist)).map(lab),ans,layout:'g4',
+    fb:'<p>Re-stack the notes in thirds from each possible root:</p><ul class="tight">'+lines+'</ul>',
+    review:'Name '+sh.map(nm).join(' ')};
+}
+// Chord name: select all of its notes
+function qBChordBuild(set){
+  const c=bRandChord(set),name=nm(c.root)+' '+CT[c.id].n,total=c.notes.length>=5?10:8,correct=c.notes.map(nm);
+  const all=[];for(let l=0;l<7;l++)for(const a of[-1,0,1]){const n={l,a};if(!correct.includes(nm(n)))all.push(n);}
+  const cp=c.notes.map(pc),dist=all.map(n=>({n,r:Math.min(...cp.map(p=>{const x=mod(pc(n)-p,12);return Math.min(x,12-x);}))+Math.random()*1.5}))
+    .sort((x,y)=>x.r-y.r).slice(0,total-correct.length).map(o=>nm(o.n));
+  return{topic:'b-chord-build',label:'Build the chord',multi:true,html:'Select every note in <b>'+name+'</b>.',
+    sub:'Pick all '+correct.length+' notes. Spelling counts: G♭ is not F♯.',staff:null,
+    opts:shuffle(correct.concat(dist)).map(lab),ans:correct,layout:total===10?'g10':'g8',
+    fb:'<p><b>'+name+'</b> is <b>'+correct.join(' ')+'</b>: '+CT[c.id].f+'.</p>'+chipsOf(c.notes,c.id),
+    review:'Notes of '+name};
+}
+
+const TOPICS=[
+  {id:'note-name',grp:'staff',min:1,vex:1,label:'Note names',ex:'Name the note on the staff'},
+  {id:'key-sig',grp:'staff',min:1,vex:1,label:'Key signatures',ex:'Which key? How many sharps?'},
+  {id:'sign',grp:'staff',min:1,vex:1,label:'Signs on notes',ex:'Staccato, accent, slur, tie'},
+  {id:'note-value',grp:'rhythm',min:1,vex:1,label:'Note and rest values',ex:'Crotchet? Minim rest? Beats?'},
+  {id:'time-sig',grp:'rhythm',min:1,vex:1,label:'Time signatures',ex:'Beats in a bar, simple or compound'},
+  {id:'bar',grp:'rhythm',min:2,vex:1,label:'Complete the bar',ex:'Which note fills the bar?'},
+  {id:'deg-note',grp:'scale',min:1,label:'Degree to note',ex:'What is the 4th of G major?'},
+  {id:'note-deg',grp:'scale',min:1,label:'Note to degree',ex:'D in G major is the 5th'},
+  {id:'scale-id',grp:'scale',min:3,vex:1,label:'Scale identification',ex:'Harmonic or melodic minor?'},
+  {id:'relative',grp:'keys',min:3,label:'Relative and parallel keys',ex:'Relative minor of E♭ major'},
+  {id:'enharmonic',grp:'keys',min:5,label:'Enharmonic notes',ex:'Another name for C♯'},
+  {id:'int-name',grp:'interval',min:2,vex:1,label:'Interval names',ex:'C up to E♭ is a minor 3rd'},
+  {id:'int-note',grp:'interval',min:3,label:'Interval to note',ex:'A major 6th above D'},
+  {id:'chord-notes',grp:'chord',min:1,label:'Chord notes',ex:'3rd chord of C major is E G B'},
+  {id:'chord-name',grp:'chord',min:1,label:'Chord names',ex:'5th chord of F major is C major'},
+  {id:'chord-deg',grp:'chord',min:1,label:'Chord number',ex:'E G B in C major is chord iii'},
+  {id:'chord-staff',grp:'chord',min:3,vex:1,label:'Triads on the staff',ex:'Name the triad, and inversions'},
+  {id:'cadence',grp:'chord',min:4,label:'Cadences',ex:'V → I is perfect'},
+  {id:'seventh',grp:'chord',min:6,label:'Seventh chords',ex:'V7 of C major is G B D F'},
+  {id:'term',grp:'terms',min:1,label:'Italian terms',ex:'Allegro, dolce, rit., D.C.'},
+  {id:'b-deg-note',grp:'basics',basics:1,min:0,label:'Degree to note',ex:'3rd of C major is E'},
+  {id:'b-note-deg',grp:'basics',basics:1,min:0,label:'Note to degree',ex:'E in C major is the 3rd'},
+  {id:'b-chord-of',grp:'basics',basics:1,min:0,label:'Chord of a degree',ex:'3rd chord of F major is A minor'},
+  {id:'b-chord-deg',grp:'basics',basics:1,min:0,label:'Chord to degree',ex:'A C E in C major is the 6th chord'},
+  {id:'b-semis',grp:'basics',basics:1,min:0,label:'Semitone gap',ex:'E up to C is 8 semitones'},
+  {id:'b-chord-id',grp:'basics',basics:1,min:0,label:'Name the jumbled chord',ex:'C E A fits A minor'},
+  {id:'b-chord-build',grp:'basics',basics:1,min:0,label:'Build the chord',ex:'F♯ major is F♯ A♯ C♯'}
+];
+const GROUPS={staff:'Staff notation',rhythm:'Rhythm and time',scale:'Scales and degrees',keys:'Keys',interval:'Intervals',chord:'Chords and harmony',terms:'Terms'};
+const GENS={
+  'note-name':qNoteName,'key-sig':qKeySig,'sign':qSign,'note-value':qNoteValue,'time-sig':qTime,'bar':qBar,
+  'deg-note':qDegNote,'note-deg':qNoteDeg,'scale-id':qScaleId,'relative':qRelative,'enharmonic':qEnharmonic,
+  'int-name':qIntName,'int-note':qIntNote,'chord-notes':s=>qChord(s,'notes'),'chord-name':s=>qChord(s,'name'),
+  'chord-deg':s=>qChord(s,'deg'),'chord-staff':qChordStaff,'cadence':qCadence,'seventh':qSeventh,'term':qTerm,'b-deg-note':qBDegNote,'b-note-deg':qBNoteDeg,'b-chord-of':qBChordOf,'b-chord-deg':qBChordDeg,'b-semis':qBSemis,'b-chord-id':qBChordId,'b-chord-build':qBChordBuild
+};
+function makeQuestion(topic,set){return GENS[topic](set);}
+// ==THEORY END==
+
+// ---------- Notation ----------
+const hasVex=()=>!!(window.Vex&&window.Vex.Flow);
+function drawStaff(el,spec){
+  el.innerHTML='';
+  if(!hasVex()){el.textContent='Notation failed to load. Check your connection and reload.';return;}
+  try{
+    const VF=Vex.Flow,W=spec.W||300,H=170;
+    const r=new VF.Renderer(el,VF.Renderer.Backends.SVG);
+    r.resize(W,H);
+    const ctx=r.getContext();
+    const st=new VF.Stave(10,45,W-20);
+    st.addClef(spec.clef);
+    if(spec.key)st.addKeySignature(spec.key);
+    if(spec.time)st.addTimeSignature(spec.time);
+    st.setContext(ctx).draw();
+    let ticks=[];
+    if(spec.chord){
+      const n=new VF.StaveNote({clef:spec.clef,keys:spec.chord.map(c=>c.key),duration:'w'});
+      spec.chord.forEach((c,i)=>{if(c.acc)n.addModifier(new VF.Accidental(c.acc),i);});
+      ticks=[n];
+    }else if(spec.notes){
+      ticks=spec.notes.map(s=>{
+        const n=new VF.StaveNote({clef:spec.clef,keys:[s.key],duration:s.dur+(s.rest?'r':'')});
+        if(s.acc)n.addModifier(new VF.Accidental(s.acc),0);
+        if(s.dots){
+          if(VF.Dot&&VF.Dot.buildAndAttach)VF.Dot.buildAndAttach([n],{all:true});
+          else if(n.addDotToAll)n.addDotToAll();
+        }
+        if(s.art)n.addModifier(new VF.Articulation(s.art).setPosition(3),0);
+        return n;
+      });
+    }
+    if(ticks.length){
+      const v=new VF.Voice({num_beats:4,beat_value:4});
+      if(VF.Voice.Mode)v.setMode(VF.Voice.Mode.SOFT);else v.setStrict(false);
+      v.addTickables(ticks);
+      const room=st.getNoteEndX()-st.getNoteStartX()-(ticks.length===1?60:24);
+      new VF.Formatter().joinVoices([v]).format([v],Math.max(50,room));
+      v.draw(ctx,st);
+      if(spec.curve==='slur'){
+        new VF.Curve(ticks[0],ticks[ticks.length-1],{cps:[{x:0,y:12},{x:0,y:12}]}).setContext(ctx).draw();
+      }else if(spec.curve==='tie'){
+        new VF.StaveTie({first_note:ticks[0],last_note:ticks[1],first_indices:[0],last_indices:[0]}).setContext(ctx).draw();
+      }
+    }
+    const svg=el.querySelector('svg');
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+    svg.removeAttribute('width');svg.removeAttribute('height');
+    svg.style.maxWidth=W+'px';
+    svg.setAttribute('role','img');svg.setAttribute('aria-label','Music notation for this question');
+  }catch(e){el.textContent='Could not draw this notation.';}
+}
+
+// ---------- App state ----------
+const DEFAULTS={grade:1,keys:'grade',mode:'grade',chap:{},bscale:{tonics:BTONICS.slice(),types:['major','natural']},ext:{s7:false,n9:false},topics:Object.fromEntries(TOPICS.map(t=>[t.id,true]))};
+const S={set:JSON.parse(JSON.stringify(DEFAULTS)),cur:null,answered:false,lastSig:'',res:[],streak:0,best:0,missed:[],queue:[]};
+try{
+  const saved=JSON.parse(localStorage.getItem('theory-drills-v3')||'null');
+  if(saved&&saved.grade>=1&&saved.grade<=8){
+    S.set={...DEFAULTS,...saved,topics:{...DEFAULTS.topics,...(saved.topics||{})}};
+  }
+}catch(e){}
+const save=()=>{try{localStorage.setItem('theory-drills-v3',JSON.stringify(S.set));}catch(e){}};
+const app=document.getElementById('app');
+const wide=window.matchMedia?window.matchMedia('(min-width:900px)').matches:true;
+app.innerHTML=
+ '<div class="layout"><section id="quiz" class="qcol"></section>'+
+ '<aside class="side"><details id="settings"'+(wide?' open':'')+'><summary>Settings <span class="live">changes apply instantly</span></summary><div id="setbody" class="setbody"></div></details>'+
+ '<details id="progress" class="prog"><summary>Progress</summary><div id="probody" class="setbody"></div></details></aside></div>';
+const $q=document.getElementById('quiz'),$s=document.getElementById('setbody'),$p=document.getElementById('probody');
+
+const GTEXT={
+  1:'Treble and bass clef notes, semibreve to quaver, 2/4 3/4 4/4, keys C G F, basic terms and signs.',
+  2:'Adds ledger lines, sharps and flats, dotted notes, semiquavers, 2/2 and 6/8, keys D B♭ and A E D minor, interval numbers, complete the bar.',
+  3:'Adds interval quality, harmonic and melodic minor, triads on the staff, relative keys, 3/2 and 12/8, keys to 3 sharps or flats.',
+  4:'Adds cadences, dotted quavers, demisemiquavers, 3/8 and 9/8, keys to 4 sharps or flats.',
+  5:'Adds alto clef, inversions, enharmonic notes, augmented and diminished intervals, keys to 5.',
+  6:'Adds seventh chords (V7), Dorian and Mixolydian, 5/4 and 7/8, keys to 6.',
+  7:'Adds tenor clef, Lydian and Phrygian, more seventh chords, keys to 7.',
+  8:'Everything, with seventh chords on every degree and double sharps and flats.'
+};
+function seg(name,items,val,cls){
+  return '<div class="seg '+(cls||'')+'" role="group">'+items.map(i=>'<button type="button" data-set="'+name+'" data-val="'+i.v+'" aria-pressed="'+(String(i.v)===String(val))+'"><b>'+i.l+'</b>'+(i.s?'<small>'+i.s+'</small>':'')+'</button>').join('')+'</div>';
+}
+const CHAPS=[
+  {id:'read',l:'Reading notes and signs',t:['note-name','sign']},
+  {id:'rhythm',l:'Rhythm and time',t:['note-value','time-sig','bar']},
+  {id:'keys',l:'Keys and key signatures',t:['key-sig','relative','enharmonic']},
+  {id:'scales',l:'Scales and degrees',t:['deg-note','note-deg','scale-id']},
+  {id:'ints',l:'Intervals',t:['int-name','int-note']},
+  {id:'triads',l:'Triads and chord numbers',t:['chord-notes','chord-name','chord-deg','chord-staff']},
+  {id:'harm',l:'Cadences and seventh chords',t:['cadence','seventh']},
+  {id:'terms',l:'Italian terms',t:['term']}
+];
+const chapTopics=c=>TOPICS.filter(t=>c.t.includes(t.id));
+const chapSel=id=>{const a=S.set.chap&&S.set.chap[S.set.grade];return !a||a.includes(id);};
+const topicOn=t=>t.basics?(S.set.topics[t.id]&&S.set.mode==='basics'):(S.set.mode!=='basics'&&CHAPS.some(c=>c.t.includes(t.id)&&chapSel(c.id))&&t.min<=S.set.grade&&(!t.vex||hasVex()));
+function chapSettings(){
+  const g=S.set.grade;
+  return '<p class="hint">Tick the chapters to practise. Questions come only from ticked chapters, at Grade '+g+' level.</p><div class="tgrid">'+CHAPS.map(c=>{
+    const ts=chapTopics(c),av=ts.filter(t=>t.min<=g&&(!t.vex||hasVex())),from=Math.min(...ts.map(t=>t.min)),off=!av.length;
+    const nw=ts.filter(t=>t.min===g).map(t=>t.label);
+    return '<button type="button" class="tchip" role="checkbox" data-chap="'+c.id+'" aria-checked="'+(!off&&chapSel(c.id))+'"'+(off?' disabled':'')+'><span class="box" aria-hidden="true">✓</span><span><b>'+c.l+'</b><small>'+(off?'From Grade '+from:av.map(t=>t.label).join(' · ')+(nw.length?'. New this grade: '+nw.join(', '):''))+'</small></span></button>';
+  }).join('')+'</div>';
+}
+function basicsSettings(){
+  const s=S.set,b=s.bscale,e=s.ext;
+  const chip=(g,v,l,on,sm,cls)=>'<button type="button" class="tchip '+(cls||'')+'" role="checkbox" data-tog="'+g+'" data-val="'+v+'" aria-checked="'+on+'"><span class="box" aria-hidden="true">✓</span><span><b>'+l+'</b>'+(sm?'<small>'+sm+'</small>':'')+'</span></button>';
+  return '<div class="sect"><h3>Scale for degree and chord quizzes</h3>'+
+   '<div class="ghead"><h4>Tonic</h4><span><button type="button" class="link" data-act="tonics-nat">Naturals</button> · <button type="button" class="link" data-act="tonics-all">All</button></span></div>'+
+   '<div class="tgrid cmp">'+BTONICS.map(t=>chip('tonic',t,t,b.tonics.includes(t),'','sm')).join('')+'</div>'+
+   '<div class="ghead"><h4>Scale type</h4></div><div class="tgrid">'+BTYPES.map(x=>chip('type',x.id,x.l,b.types.includes(x.id),x.s||'')).join('')+'</div>'+
+   (bValid(s).length?'':'<div class="notice">No valid scale in this mix (it needs double sharps or flats). Using C major.</div>')+
+   '<p class="hint">Combinations that need double sharps or flats are skipped.</p></div>'+
+   '<div class="sect"><h3>Chord extensions</h3><div class="tgrid">'+chip('ext','s7','7th chords',!!e.s7,'Cmaj7, Dm7, G7')+chip('ext','n9','9th chords',!!e.n9,'Cmaj9, Dm9, G9')+'</div><p class="hint">Applies to all chord quizzes here. Triads are always included.</p></div>'+
+   '<div class="sect"><h3>Topics</h3><div class="tgrid">'+TOPICS.filter(t=>t.basics).map(t=>'<button type="button" class="tchip" role="checkbox" data-topic="'+t.id+'" aria-checked="'+!!s.topics[t.id]+'"><span class="box" aria-hidden="true">✓</span><span><b>'+t.label+'</b><small>'+t.ex+'</small></span></button>').join('')+'</div></div>';
+}
+const activeTopics=()=>TOPICS.filter(topicOn);
+
+function renderSettings(focusSel){
+  const s=S.set;
+  const modeSeg='<div class="sect"><h3>Mode</h3>'+seg('mode',[{v:'basics',l:'Basics',s:'No notation'},{v:'grade',l:'Grades 1 to 8',s:'Trinity-style'}],s.mode)+'</div>';
+  if(s.mode==='basics'){
+    $s.innerHTML=modeSeg+basicsSettings();
+    if(focusSel){const f=$s.querySelector(focusSel);if(f)f.focus({preventScroll:true});}
+    return;
+  }
+  $s.innerHTML=modeSeg+
+   '<div class="sect"><h3>Grade</h3>'+seg('grade',[1,2,3,4,5,6,7,8].map(n=>({v:n,l:String(n)})),s.grade,'nums')+'<p class="hint">'+GTEXT[s.grade]+' Each grade includes the ones before it.</p></div>'+
+   '<div class="sect"><h3>Keys for scales and chords</h3>'+seg('keys',[{v:'grade',l:'Up to this grade'},{v:'all',l:'All keys',s:'to 7 sharps or flats'}],s.keys)+'</div>'+
+   '<div class="sect"><h3>Chapters</h3>'+chapSettings()+
+   (hasVex()?'':'<div class="notice">The notation library did not load, so staff topics are off. Reload when online.</div>')+
+   Object.keys(GROUPS).filter(()=>false).map(g=>'<div class="group"><div class="ghead"><h4>'+GROUPS[g]+'</h4><button type="button" class="link" data-act="only" data-grp="'+g+'">Only this</button></div><div class="tgrid">'+
+     TOPICS.filter(t=>t.grp===g).map(t=>{
+       const locked=t.min>s.grade,off=locked||(t.vex&&!hasVex());
+       return '<button type="button" class="tchip" role="checkbox" data-topic="'+t.id+'" aria-checked="'+(!off&&!!s.topics[t.id])+'"'+(off?' disabled':'')+'><span class="box" aria-hidden="true">✓</span><span><b>'+t.label+'</b><small>'+(locked?'From Grade '+t.min:t.ex)+'</small></span></button>';
+     }).join('')+'</div></div>').join('')+
+   '<div class="actions"><button type="button" class="link" data-act="chap-all">All chapters</button></div></div>';
+  if(focusSel){const f=$s.querySelector(focusSel);if(f)f.focus({preventScroll:true});}
+}
+function renderProgress(){
+  const res=S.res,n=res.length,right=res.filter(r=>r.ok).length;
+  if(!n){$p.innerHTML='<p class="hint">Answer a question and your accuracy by topic appears here.</p>';return;}
+  const by={};
+  res.forEach(r=>{const k=r.q.label;(by[k]=by[k]||{t:0,c:0});by[k].t++;if(r.ok)by[k].c++;});
+  const m=S.missed;
+  $p.innerHTML=
+   '<div class="statline"><span><b>'+right+'/'+n+'</b> correct</span><span>Streak <b>'+S.streak+'</b></span><span>Best <b>'+S.best+'</b></span></div>'+
+   '<div class="rows">'+Object.keys(by).map(k=>{const b=by[k],p=Math.round(b.c/b.t*100);return '<div class="trow"><span>'+k+'</span><div class="bar"><i class="good" style="width:'+p+'%"></i></div><output>'+b.c+'/'+b.t+'</output></div>';}).join('')+'</div>'+
+   '<div class="actions">'+(m.length?'<button type="button" class="btn small" data-act="retry">Re-drill '+m.length+' missed</button>':'')+'<button type="button" class="btn small ghost" data-act="reset">Reset score</button></div>'+
+   (m.length?'<div class="mlist">'+m.slice(-8).reverse().map(r=>'<div class="mi"><span>'+r.q.review+'</span><b>'+r.correct+'</b></div>').join('')+'</div>':'');
+}
+
+function nextQ(){
+  const act=activeTopics();
+  if(!act.length){S.cur=null;renderQuiz();return;}
+  let q;
+  if(S.queue.length){const o=S.queue.shift();q={...o,opts:shuffle(o.opts)};}
+  else{
+    for(let k=0;k<6;k++){
+      q=makeQuestion(pick(act).id,S.set);
+      const sig=q.topic+q.html+JSON.stringify(q.staff);
+      if(sig!==S.lastSig){S.lastSig=sig;break;}
+    }
+  }
+  S.cur=q;S.answered=false;
+  renderQuiz();
+}
+function renderQuiz(){
+  const q=S.cur;S.sel=new Set();
+  if(!q){
+    $q.innerHTML='<div class="card"><h2 class="prompt">No topics selected</h2><p class="sub">Tick at least one chapter or topic in Settings and questions start straight away.</p></div>';
+    return;
+  }
+  const n=S.res.length,right=S.res.filter(r=>r.ok).length;
+  $q.innerHTML=
+   '<div class="card" aria-label="Question">'+
+   '<div class="qhead"><span class="tag">'+q.label+' · '+(S.set.mode==='basics'?'Basics':'Grade '+S.set.grade)+'</span><span class="stat">'+right+'/'+n+' correct · streak '+S.streak+'</span></div>'+
+   '<h2 class="prompt">'+q.html+'</h2>'+(q.sub?'<p class="sub">'+q.sub+'</p>':'')+
+   (q.staff?'<div class="paper" id="staff"></div>':'')+
+   '<div class="opts '+q.layout+(q.txt?' txt':'')+'" id="opts">'+q.opts.map(o=>'<button type="button" class="opt" data-opt="'+o.id+'"'+(q.multi?' aria-pressed="false"':'')+'>'+o.label+(o.sub?'<small>'+o.sub+'</small>':'')+'</button>').join('')+'</div>'+
+   '<div class="fb" id="fb" aria-live="polite">'+(q.multi?'<button type="button" class="btn" data-act="check" id="checkBtn" disabled>Check answer</button>':'')+'</div></div>';
+  if(q.staff)drawStaff(document.getElementById('staff'),q.staff);
+}
+function finish(ok,chosenL,correctL,verdict){
+  const q=S.cur,r={q,ok,chosen:chosenL,correct:correctL};
+  S.res.push(r);
+  if(ok){S.streak++;if(S.streak>S.best)S.best=S.streak;}else{S.streak=0;S.missed.push(r);}
+  document.getElementById('fb').innerHTML='<div class="verdict '+(ok?'ok':'no')+'">'+verdict+'</div>'+q.fb+
+    '<button type="button" class="btn" data-act="next" id="nextBtn">Next question</button>';
+  const st=$q.querySelector('.stat');
+  if(st)st.textContent=S.res.filter(x=>x.ok).length+'/'+S.res.length+' correct · streak '+S.streak;
+  renderProgress();
+  const nb=document.getElementById('nextBtn');
+  nb.focus({preventScroll:true});
+  nb.scrollIntoView({block:'nearest'});
+}
+function answer(id){
+  const q=S.cur;
+  if(!q||S.answered||q.multi)return;
+  S.answered=true;
+  const ok=id===q.ans;
+  const chosen=q.opts.find(o=>o.id===id),correct=q.opts.find(o=>o.id===q.ans);
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    b.disabled=true;
+    const bid=b.getAttribute('data-opt');
+    if(bid===q.ans)b.classList.add('right');
+    else if(bid===id)b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+  finish(ok,chosen?chosen.label:id,correct.label,ok?'Correct':'Not quite. The answer is '+correct.label);
+}
+function toggleOpt(id){
+  const q=S.cur;
+  if(!q||S.answered||!q.multi)return;
+  if(S.sel.has(id))S.sel.delete(id);else S.sel.add(id);
+  document.querySelectorAll('#opts .opt').forEach(b=>{const on=S.sel.has(b.getAttribute('data-opt'));b.classList.toggle('sel',on);b.setAttribute('aria-pressed',String(on));});
+  const cb=document.getElementById('checkBtn');if(cb)cb.disabled=!S.sel.size;
+}
+function checkMulti(){
+  const q=S.cur;
+  if(!q||S.answered||!q.multi||!S.sel.size)return;
+  S.answered=true;
+  const want=new Set(q.ans),got=S.sel,ok=want.size===got.size&&[...want].every(x=>got.has(x));
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    b.disabled=true;b.classList.remove('sel');
+    const bid=b.getAttribute('data-opt'),w=want.has(bid),g=got.has(bid);
+    if(w&&g)b.classList.add('right');
+    else if(w){b.classList.add('right','missed');b.insertAdjacentHTML('beforeend','<small>missed</small>');}
+    else if(g)b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+  const L2=ids=>ids.join(', ');
+  finish(ok,L2([...got]),L2(q.ans),ok?'Correct':'Not quite. The answer is '+L2(q.ans));
+}
+// Settings changed: an unanswered question is swapped at once; an answered one stays until Next.
+function applyLive(){
+  S.queue=[];
+  if(!S.cur||!S.answered)nextQ();
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-set],[data-topic],[data-act],[data-opt],[data-tog],[data-chap]');
+  if(!t||!app.contains(t))return;
+  if(t.dataset.opt!==undefined){if(S.cur&&S.cur.multi)toggleOpt(t.dataset.opt);else answer(t.dataset.opt);return;}
+  if(t.dataset.chap){
+    const id=t.dataset.chap,cur=CHAPS.map(c=>c.id).filter(chapSel),i=cur.indexOf(id);
+    if(i<0)cur.push(id);else cur.splice(i,1);
+    S.set.chap=S.set.chap||{};S.set.chap[S.set.grade]=cur;
+    save();renderSettings('[data-chap="'+id+'"]');applyLive();return;
+  }
+  if(t.dataset.tog){
+    const g=t.dataset.tog,v=t.dataset.val;
+    if(g==='ext')S.set.ext[v]=!S.set.ext[v];
+    else{const arr=g==='tonic'?S.set.bscale.tonics:S.set.bscale.types,i=arr.indexOf(v);if(i<0)arr.push(v);else if(arr.length>1)arr.splice(i,1);}
+    save();renderSettings('[data-tog="'+g+'"][data-val="'+v+'"]');applyLive();return;
+  }
+  if(t.dataset.set){
+    const k=t.dataset.set,v=t.dataset.val;
+    S.set[k]=k==='grade'?Number(v):v;
+    save();renderSettings('[data-set="'+k+'"][data-val="'+v+'"]');applyLive();return;
+  }
+  if(t.dataset.topic){
+    const id=t.dataset.topic;S.set.topics[id]=!S.set.topics[id];save();
+    renderSettings('[data-topic="'+id+'"]');applyLive();return;
+  }
+  switch(t.dataset.act){
+    case'only':{const g=t.dataset.grp;TOPICS.forEach(x=>{if(!x.basics)S.set.topics[x.id]=x.grp===g;});save();renderSettings('[data-grp="'+g+'"]');applyLive();break;}
+    case'all':TOPICS.forEach(x=>{S.set.topics[x.id]=true;});save();renderSettings('[data-act="all"]');applyLive();break;
+    case'next':nextQ();break;
+    case'check':checkMulti();break;
+    case'chap-all':S.set.chap=S.set.chap||{};delete S.set.chap[S.set.grade];save();renderSettings('[data-act="chap-all"]');applyLive();break;
+    case'tonics-all':S.set.bscale.tonics=BTONICS.slice();save();renderSettings('[data-act="tonics-all"]');applyLive();break;
+    case'tonics-nat':S.set.bscale.tonics=['C','D','E','F','G','A','B'];save();renderSettings('[data-act="tonics-nat"]');applyLive();break;
+    case'retry':S.queue=shuffle(S.missed.map(r=>r.q));S.missed=[];renderProgress();nextQ();break;
+    case'reset':S.res=[];S.missed=[];S.streak=0;S.best=0;S.queue=[];renderProgress();if(S.cur)renderQuiz();break;
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.closest&&e.target.closest('button,summary,input'))return;
+  if((e.key==='Enter'||e.key===' ')&&S.answered){e.preventDefault();nextQ();}
+});
+renderSettings();renderProgress();nextQ();
+</script>
+
+</body></html>
